@@ -3,3 +3,4 @@ obj
 *.suo
 FileExtract.csproj.user
 *.user
+.svn
