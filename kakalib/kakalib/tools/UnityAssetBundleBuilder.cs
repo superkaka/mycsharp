@@ -9,6 +9,7 @@ using KLib.structs;
 using KLib.utils;
 using System.Data.SQLite;
 using System.Data;
+using System.Diagnostics;
 using System.Threading;
 
 namespace KLib.tools
@@ -16,7 +17,7 @@ namespace KLib.tools
     public class UnityAssetBundleBuilder
     {
 
-        static public void build(String inputPath, String outputPath)
+        static public void build(String inputPath, String outputPath, int maxThread)
         {
 
             Console.WriteLine("input:" + inputPath);
@@ -68,18 +69,32 @@ namespace KLib.tools
             StringBuilder sb = new StringBuilder();
             StringBuilder lost = new StringBuilder();
             int i = 0;
+            int finishCount = 0;
             int count = 0;
             int c = list_info.Count;
 
             Console.Write("正在处理文件...");
+
+            var lockObj = new object();
+            int curThread = 0;
 
             var compresser = new LZMACompresser();
             var encoding = Encoding.GetEncoding("gb2312");
             encoding = Encoding.UTF8;
             var backNum = 0;
 
-            while (i < c)
+            var time = new Stopwatch();
+            time.Start();
+
+            while (true)
             {
+                if (finishCount >= c)
+                    break;
+                Thread.Sleep(5);
+                if (curThread >= maxThread)
+                    continue;
+                if (i >= c)
+                    continue;
                 ResourceInfo resInfo = list_info[i];
                 i++;
 
@@ -90,50 +105,55 @@ namespace KLib.tools
 
                 if (file.Exists)
                 {
-
-                    var backStr = new StringBuilder();
-                    for (int j = 0; j < backNum; j++)
+                    curThread++;
+                    var thread = new Thread(() =>
                     {
-                        //Console.Write('\u0008');
-                        backStr.Append("\u0008");
-                    }
-                    //Console.Write(backStr.ToString());
 
-                    //var showFileName = newFileName;
-                    //if (showFileName.LastIndexOf("/") >= 0)
-                    //    showFileName = showFileName.Substring(showFileName.LastIndexOf("/") + 1);
+                        var bytes = File.ReadAllBytes(inputPath + fileName);
 
-                    //var writeConsoleStr = string.Format("{0}/{1} [{2}]", i, c, showFileName);
-                    var writeConsoleStr = string.Format("{0}/{1}", i, c);
-                    Console.Write(backStr.ToString() + writeConsoleStr);
-                    backNum = encoding.GetBytes(writeConsoleStr).Length;
+                        bytes = compresser.compress(bytes);
 
-                    var bytes = File.ReadAllBytes(inputPath + fileName);
+                        File.WriteAllBytes(outputFilePath + newFileName, bytes);
 
+                        var md5 = MD5Utils.BytesToMD5(bytes);
 
-                    bytes = compresser.compress(bytes);
+                        lock (lockObj)
+                        {
+                            sb.Append(newFileName);
+                            sb.Append(",");
+                            sb.Append(resInfo.version);
+                            sb.Append(",");
+                            sb.Append(bytes.Length);
+                            sb.Append(",");
+                            sb.Append(md5);
+                            sb.Append("\r\n");
+                            finishCount++;
+                            count++;
+                            curThread--;
+                        }
 
-                    File.WriteAllBytes(outputFilePath + newFileName, bytes);
-
-                    var md5 = MD5Utils.BytesToMD5(bytes);
-
-                    sb.Append(newFileName);
-                    sb.Append(",");
-                    sb.Append(resInfo.version);
-                    sb.Append(",");
-                    sb.Append(bytes.Length);
-                    sb.Append(",");
-                    sb.Append(md5);
-                    sb.Append("\r\n");
-                    count++;
+                    });
+                    thread.Start();
 
                 }
                 else
                 {
+                    finishCount++;
                     lost.Append(fileName);
                     lost.Append("\r\n");
                 }
+                var backStr = new StringBuilder();
+                for (int j = 0; j < backNum; j++)
+                {
+                    backStr.Append("\u0008");
+                }
+                var writeConsoleStr = string.Format("{0}/{1} thread:{2}/{3}", i, c, curThread, maxThread);
+                Console.Write(backStr.ToString() + writeConsoleStr);
+                backNum = encoding.GetBytes(writeConsoleStr).Length;
             }
+
+            time.Stop();
+
 
             if (count != 0) sb.Remove(sb.Length - 2, 2);
 
@@ -150,8 +170,9 @@ namespace KLib.tools
                 Console.WriteLine(lost);
             }
 
+            Console.WriteLine();
             Console.WriteLine("已生成" + count + "个文件信息");
-            //Console.ReadLine();
+            Console.WriteLine("耗时" + time.Elapsed.TotalSeconds + "秒");
         }
 
         static private String readFromSqlite(String path, ArrayList list)

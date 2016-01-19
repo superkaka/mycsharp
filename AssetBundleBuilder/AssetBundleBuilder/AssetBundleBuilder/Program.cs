@@ -16,7 +16,10 @@ namespace AssetBundleBuilder
             {
                 try
                 {
-                    UnityAssetBundleBuilder.build(dic["input"], dic["output"]);
+                    var thread = 3;
+                    if (dic.ContainsKey("thread"))
+                        thread = Convert.ToInt32(dic["thread"]);
+                    UnityAssetBundleBuilder.build(dic["input"], dic["output"], thread);
 #if DEBUG
                     Console.ReadLine();
 #endif
