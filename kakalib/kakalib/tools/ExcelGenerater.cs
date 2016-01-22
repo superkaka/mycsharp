@@ -34,7 +34,7 @@ namespace KLib.tools
 
         static public DateTime ExpiresTime
         {
-            get { return new DateTime(2016, 1, 22); }
+            get { return new DateTime(2016, 3, 22); }
         }
 
         static public void export(String inputPath, String outputPath, CompressOption op, String prefix_primaryKey, String prefix_IgnoreSheet, String prefix_IgnoreLine, String prefix_IgnoreColumn, Boolean ignoreBlank)

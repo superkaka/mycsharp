@@ -79,8 +79,7 @@ namespace KLib.tools
             int curThread = 0;
 
             var compresser = new LZMACompresser();
-            var encoding = Encoding.GetEncoding("gb2312");
-            encoding = Encoding.UTF8;
+            var encoding = Encoding.UTF8;
             var backNum = 0;
 
             var time = new Stopwatch();
