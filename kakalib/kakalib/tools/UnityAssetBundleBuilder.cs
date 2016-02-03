@@ -161,6 +161,7 @@ namespace KLib.tools
             Byte[] FileInfoBytes = Encoding.UTF8.GetBytes(sb.ToString());
 
             FileUtil.writeFile(outputFilePath + "assetInfo.txt", FileInfoBytes);
+            FileUtil.writeFile(outputFilePath + "assetInfo_compressed.txt", compresser.compress(FileInfoBytes));
             FileUtil.writeFile(outputPath + "assetVersion.txt", Encoding.UTF8.GetBytes(buildVersion));
 
             if (lost.Length != 0)

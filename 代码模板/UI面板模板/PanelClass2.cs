@@ -2,17 +2,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine;
-using LitUnity;
 using System.Linq;
+using UnityEngine;
+using KLib;
+
 
 /// <summary>
 /// author      $username$
 /// date        $time$$if$ ($username$ == linchen)
 /// Email       superkaka.org@gmail.com$endif$
-/// 代码模板v1.4
+/// 代码模板v1.5
 /// 注意事项：不要覆写Awake、Start、OnDestroy函数，使用相应的替代函数。
 /// </summary>
+
 public class $safeitemname$ : PanelEx<object>//通过泛型指定Data属性的类型
 {
     
@@ -84,6 +86,18 @@ public class $safeitemname$ : PanelEx<object>//通过泛型指定Data属性的�
         
         
         
+    }
+    
+    /// <summary>
+    /// 界面即将被销毁前
+    /// 替代OnDestroy
+    /// </summary>
+    override protected void beforeDispose()
+    {
+        base.beforeDispose();
+
+
+
     }
     
     /// <summary>

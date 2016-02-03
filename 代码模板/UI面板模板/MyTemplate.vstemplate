@@ -2,7 +2,7 @@
   <TemplateData>
     <DefaultName>PanelName</DefaultName>
     <Name>UI面板类</Name>
-    <Description>UI面板类，继承自BasePanel</Description>
+    <Description>UI面板类，继承自PanelEx</Description>
     <ProjectType>CSharp</ProjectType>
     <SortOrder>10</SortOrder>
     <Icon>__TemplateIcon.ico</Icon>
