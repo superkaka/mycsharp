@@ -20,9 +20,15 @@ namespace KLib.net.protocol
             get { return classExtension; }
         }
 
+        private string protocolEnumName;
+
+        public string ProtocolEnumName
+        {
+            get { return protocolEnumName; }
+        }
+
         private string template_singleFile;
         private string template_class;
-        private string template_structClass;
         private string template_arrayDecode;
         private string template_arrayEncode;
         private string template_arrayAccess;
@@ -55,14 +61,14 @@ namespace KLib.net.protocol
             if (classExtension.IndexOf(".") < 0)
                 classExtension = "." + classExtension;
 
+            protocolEnumName = getConfig("protocolEnumName");
+
             element_SingleProtocolFile = xml_template.Element("SingleProtocolFile");
             if (element_SingleProtocolFile != null)
                 template_singleFile = element_SingleProtocolFile.Value;
 
             template_class = xml_template.Element("ProtocolVOClass").Value;
             template_class = Properties.Resources.logo_protocol + template_class;
-            template_structClass = xml_template.Element("StructClass").Value;
-            template_structClass = Properties.Resources.logo_protocol + template_structClass;
             template_definitionMember = xml_template.Element("definitionMember").Value;
             template_definitionArray = xml_template.Element("definitionArray").Value;
             template_arrayDecode = xml_template.Element("decodeArray").Value;
@@ -74,11 +80,14 @@ namespace KLib.net.protocol
             template_enumClass = Properties.Resources.logo_protocol + template_enumClass;
             template_enumDefinition = xml_template.Element("definitionEnum").Value;
 
-            element_MessageRegisterClass = xml_template.Element("MessageRegisterClass");
+            element_MessageRegisterClass = xml_template.Element("MessageCreaterClass");
             template_messageRegisterClass = element_MessageRegisterClass.Value;
             template_messageRegisterClass = Properties.Resources.logo_protocol + template_messageRegisterClass;
-            template_messageRegister = xml_template.Element("MessageRegister").Value;
-            template_messageCreater = xml_template.Element("MessageCreater").Value;
+            template_messageRegister = xml_template.Element("MessageRegisterCreater").Value;
+
+            var element_MessageCreater = xml_template.Element("MessageCreateFun");
+            if (element_MessageCreater != null)
+                template_messageCreater = element_MessageCreater.Value;
 
             var list_type = xml_template.Element("params").Elements("param");
             foreach (var item in list_type)
@@ -112,42 +121,42 @@ namespace KLib.net.protocol
         public string getClassName(string paramType)
         {
             var paramVO = getParamVO(paramType);
+            if (paramVO == null)
+                return null;
             return paramVO.className;
         }
 
-        public string getDecode(string paramType, string member, string structClassName = "structClassName")
+        public string getDecode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
         {
-            var paramVO = getParamVO(paramType);
+            var paramVO = getParamVO(paramType, memberType);
             var result = paramVO.template_decode.Replace(mark_member, member);
             result = result.Replace(mark_className, structClassName);
             return result;
         }
 
-        public string getArrayDecode(string paramType, string member, string structClassName = "structClassName")
+        public string getArrayDecode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
         {
-            var paramVO = getParamVO(paramType);
             var arrayMember = template_arrayAccess.Replace(mark_member, member);
-            var decode = getDecode(paramType, arrayMember, structClassName);
-            var result = template_arrayDecode.Replace("$(decode)", decode);
+            var decode = getDecode(memberType, paramType, arrayMember, structClassName);
+            var result = template_arrayDecode.Replace("$(decode)", decode.Trim());
             result = result.Replace(mark_member, member);
             result = result.Replace(mark_className, structClassName);
             return result;
         }
 
-        public string getEncode(string paramType, string member, string structClassName = "structClassName")
+        public string getEncode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
         {
-            var paramVO = getParamVO(paramType);
+            var paramVO = getParamVO(paramType, memberType);
             var result = paramVO.template_encode.Replace(mark_member, member);
             result = result.Replace(mark_className, structClassName);
             return result;
         }
 
-        public string getArrayEncode(string paramType, string member, string structClassName = "structClassName")
+        public string getArrayEncode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
         {
-            var paramVO = getParamVO(paramType);
             var arrayMember = template_arrayAccess.Replace(mark_member, member);
-            var encode = getEncode(paramType, arrayMember, structClassName);
-            var result = template_arrayEncode.Replace("$(encode)", encode);
+            var encode = getEncode(memberType, paramType, arrayMember, structClassName);
+            var result = template_arrayEncode.Replace("$(encode)", encode.Trim());
             result = result.Replace(mark_member, member);
             result = result.Replace(mark_className, structClassName);
             return result;
@@ -183,19 +192,6 @@ namespace KLib.net.protocol
             return text;
         }
 
-        public string getStructText(string className, string definition, string decode, string encode, string comment)
-        {
-            var text = template_structClass;
-            text = text.Replace(mark_className, className);
-            text = text.Replace("$(definition)", definition);
-            text = text.Replace("$(decode)", decode);
-            text = text.Replace("$(encode)", encode);
-            text = text.Replace(mark_comment, comment);
-            text = text.Replace("\n", "\r\n");
-            text = text.Replace("\r\r\n", "\r\n");
-            return text;
-        }
-
         public string getSingleFileText(string content)
         {
             var text = template_singleFile;
@@ -215,12 +211,20 @@ namespace KLib.net.protocol
             return str;
         }
 
-        private ParamVO getParamVO(string paramType)
+        private ParamVO getParamVO(string paramType, ProtocolMemberType memberType = ProtocolMemberType.Normal)
         {
             paramType = paramType.ToLower();
-            if (dic_param.ContainsKey(paramType))
-                return dic_param[paramType];
-            throw new Exception("不支持的paramType:" + paramType);
+            switch (memberType)
+            {
+                case ProtocolMemberType.Normal:
+                    return dic_param[paramType];
+                case ProtocolMemberType.Struct:
+                    return dic_param["struct"];
+                case ProtocolMemberType.Enum:
+                    return dic_param["enum"];
+            }
+            //throw new Exception("不支持的paramType:" + paramType);
+            return null;
         }
 
         private class ParamVO
@@ -240,10 +244,12 @@ namespace KLib.net.protocol
             return result;
         }
 
-        public string getProtocolEnumClass(string content)
+        public string getProtocolEnumClass(string enumName, string content, string comment)
         {
             var text = template_enumClass;
+            text = text.Replace("$(className)", enumName);
             text = text.Replace("$(content)", content);
+            text = text.Replace("$(comment)", comment);
             text = text.Replace("\n", "\r\n");
             text = text.Replace("\r\r\n", "\r\n");
             return text;
@@ -258,6 +264,8 @@ namespace KLib.net.protocol
 
         public string getMessageCreater(string className)
         {
+            if (template_messageCreater == null)
+                return "";
             var result = template_messageCreater.Replace(mark_className, className);
             return result;
         }

@@ -4,14 +4,21 @@ using KLib.utils;
 
 namespace protocol
 {
-    public abstract class BaseVO
+    public abstract class BaseProtocolVO
     {
 
+        private MessageType protocolType;
         private int protocolId;
 
-        public BaseVO(int protocolId)
+        public BaseProtocolVO(MessageType protocolType)
         {
-            this.protocolId = protocolId;
+            this.protocolType = protocolType;
+            this.protocolId = (int)protocolType;
+        }
+
+        public MessageType ProtocolType
+        {
+            get { return protocolType; }
         }
 
         public int ProtocolId
@@ -19,7 +26,7 @@ namespace protocol
             get { return protocolId; }
         }
 
-        public void decode(Byte[] bytes)
+        public void decode(byte[] bytes)
         {
             var binReader = new EndianBinaryReader(Endian.BigEndian, new MemoryStream(bytes));
             decode(binReader);

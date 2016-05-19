@@ -5,136 +5,18 @@ using System.Linq;
 using System.Xml.Linq;
 using System.Text;
 using System.IO;
+using System.Text.RegularExpressions;
 using KLib.tools;
 
 namespace KLib.net.protocol
 {
     public class CodeGenerater
     {
-
-        private List<XElement> list_message;
         private CodeTemplate codeTemplate;
         private Dictionary<string, bool> dic_name = new Dictionary<string, bool>();
-        private Dictionary<string, bool> dic_id = new Dictionary<string, bool>();
-        private Dictionary<string, XElement> dic_struct = new Dictionary<string, XElement>();
-
-        public string readItem(XElement item)
-        {
-            var name = item.Attribute("name").Value;
-            var idStr = item.Attribute("id").Value;
-            int id;
-            try
-            {
-                id = Convert.ToInt32(idStr);
-                idStr = id.ToString();
-            }
-            catch
-            {
-                throw new Exception(String.Format("转换消息id:{0} 失败", idStr));
-            }
-
-            if (dic_name.ContainsKey(name))
-            {
-                throw new Exception(String.Format("重复的协议名:{0}", name));
-            }
-            if (dic_id.ContainsKey(idStr))
-            {
-                throw new Exception(String.Format("重复的协议id:{0}", idStr));
-            }
-
-            dic_name.Add(name, true);
-            dic_id.Add(idStr, true);
-
-            return readParams(item);
-        }
-
-        public string readParams(XElement item, string parent = "")
-        {
-
-            string text = "";
-            string singleVOText = "";
-
-            var isMessage = item.Name.LocalName.ToLower() == "message";
-
-            var itemName = item.Attribute("name").Value;
-            var pathName = parent + itemName;
-
-            string str_definition = "";
-            string str_encode = "";
-            string str_decode = "";
-
-            var list_param = item.Elements().ToList<XElement>();
-            for (int i = 0; i < list_param.Count; i++)
-            {
-                var param = list_param[i];
-                var paramPrefix = param.Name.LocalName.ToLower();
-                var memberName = param.Attribute("name").Value;
-                var type = param.Attribute("type").Value.ToLower();
-                var className = codeTemplate.getClassName(type);
-
-                if (type == "struct")
-                {
-                    XElement structXML;
-
-                    var attr_structName = param.Attribute("structName");
-                    if (attr_structName != null)
-                    {
-                        if (dic_struct.ContainsKey(attr_structName.Value))
-                        {
-                            structXML = dic_struct[attr_structName.Value];
-                            className = attr_structName.Value;
-                            //readParams(structXML);
-                        }
-                        else
-                        {
-                            throw new Exception("不存在的结构体:" + attr_structName.Value);
-                        }
-                    }
-                    else
-                    {
-                        structXML = param;
-                        className = pathName + "_" + memberName;
-                        text += readParams(structXML, pathName + "_");
-                    }
-
-                    className = codeTemplate.getFinalClassName(className);
-
-                }
-
-                if (paramPrefix == "param")
-                {
-                    str_decode += codeTemplate.getDecode(type, memberName, className);
-                    str_encode += codeTemplate.getEncode(type, memberName, className);
-                    str_definition += codeTemplate.getDefinition(className, memberName, readComment(param));
-                }
-                else if (paramPrefix == "listparam")
-                {
-                    str_decode += codeTemplate.getArrayDecode(type, memberName, className);
-                    str_encode += codeTemplate.getArrayEncode(type, memberName, className);
-                    str_definition += codeTemplate.getArrayDefinition(className, memberName, readComment(param));
-                }
-                else
-                {
-                    throw new Exception(String.Format("参数节点前缀必须为param或listParam。 name : {0}", memberName));
-                }
-
-            }
-
-            var fileClassName = codeTemplate.getFinalClassName(pathName);
-
-            if (isMessage)
-                singleVOText = codeTemplate.getProtocolVOText(fileClassName, str_definition, item.Attribute("name").Value, str_decode, str_encode, readComment(item));
-            else
-                singleVOText = codeTemplate.getStructText(fileClassName, str_definition, str_decode, str_encode, readComment(item));
-
-            if (singleMode)
-                text += singleVOText;
-            else
-                FileUtil.writeFile(voFolderPath + fileClassName + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(singleVOText));
-
-            return text;
-
-        }
+        private Dictionary<int, ProtocolStruct> dic_message = new Dictionary<int, ProtocolStruct>();
+        private Dictionary<string, ProtocolStruct> dic_struct = new Dictionary<string, ProtocolStruct>();
+        private Dictionary<string, ProtocolEnum> dic_enum = new Dictionary<string, ProtocolEnum>();
 
         public string readComment(XElement item)
         {
@@ -148,7 +30,16 @@ namespace KLib.net.protocol
         private string voFolderPath;
         private bool singleMode;
         private string voFolder;
-        public void generate(string protocolXmlPath, string templateXmlPath, string codeFolderPath)
+
+        private Regex reg_message = new Regex(@"\s+([^}]*)message\s+(\S+)\s+(\d+)\s+{([^}]*)}");
+        private Regex reg_struct = new Regex(@"\s+([^}]*)struct\s+(\S+)\s+{([^}]*)}");
+        private Regex reg_enum = new Regex(@"\s+([^}]*)enum\s+(\S+)\s+{([^}]*)}");
+        private Regex reg_member = new Regex(@"(\S+)\s+(\S+)([^$]*?)$", RegexOptions.Multiline);
+        private Regex reg_memberListCheck = new Regex(@"List<(\S+)>");
+        private Regex reg_enumMember = new Regex(@"(\S+)\s*=\s*(\d+)([^$]*?)$", RegexOptions.Multiline);
+
+
+        public void generate(string protocolFolderPath, string templateXmlPath, string codeFolderPath)
         {
 
             var template = XElement.Load(templateXmlPath);
@@ -184,53 +75,123 @@ namespace KLib.net.protocol
 
             var text = "";
 
-            var rootE = XElement.Load(protocolXmlPath);
-
-
-            var list_struct = (from item in rootE.Elements("struct")
-                               select item).ToList<XElement>();
-            foreach (var item in list_struct)
+            var list_ptlFile = Directory.GetFiles(protocolFolderPath, "*.ptl");
+            foreach (var filePath in list_ptlFile)
             {
-                var structName = item.Attribute("name").Value;
-                if (dic_struct.ContainsKey(structName))
-                    throw new Exception("重复的struct节点:" + structName);
-                else
+                text += File.ReadAllText(filePath, Encoding.UTF8);
+                text += @"
+";
+            }
+            text = clearComment(text);
+
+            var match_structs = reg_struct.Matches(text);
+            for (int m = 0; m < match_structs.Count; m++)
+            {
+                var match_struct = match_structs[m];
+                var protoStruct = new ProtocolStruct()
                 {
-                    text += readParams(item);
-                    dic_struct.Add(structName, item);
-                }
+                    isMessage = false,
+                    comment = cleanComment(match_struct.Groups[1].Value),
+                    type = match_struct.Groups[2].Value,
+                };
+                protoStruct.memberList = parseMembers(match_struct.Groups[3].Value);
+
+                if (dic_struct.ContainsKey(protoStruct.type))
+                    throw new Exception("重复的struct定义:" + protoStruct.type);
+                dic_struct.Add(protoStruct.type, protoStruct);
+
+                // text += readParams(item);
             }
 
-
-            list_message =
-                      (from item in rootE.Elements("message")
-                       orderby Convert.ToInt32(item.Attribute("id").Value)
-                       select item).ToList<XElement>();
-            foreach (var item in list_message)
+            match_structs = reg_message.Matches(text);
+            for (int m = 0; m < match_structs.Count; m++)
             {
-                text += readItem(item);
+                var match_struct = match_structs[m];
+                var protoStruct = new ProtocolStruct()
+                {
+                    isMessage = true,
+                    comment = cleanComment(match_struct.Groups[1].Value),
+                    type = match_struct.Groups[2].Value,
+                };
+                protoStruct.memberList = parseMembers(match_struct.Groups[4].Value);
+
+                var idStr = match_struct.Groups[3].Value;
+                try
+                {
+                    protoStruct.id = Convert.ToInt32(idStr);
+                }
+                catch
+                {
+                    throw new Exception(String.Format("转换消息id:{0} 失败", idStr));
+                }
+
+                if (dic_message.ContainsKey(protoStruct.id))
+                    throw new Exception("重复的消息号定义:" + protoStruct.id);
+                dic_message.Add(protoStruct.id, protoStruct);
+
+                if (dic_struct.ContainsKey(protoStruct.type))
+                    throw new Exception("重复的struct定义:" + protoStruct.type);
+                dic_struct.Add(protoStruct.type, protoStruct);
+
+                // text += readParams(item);
             }
 
+            match_structs = reg_enum.Matches(text);
+            for (int m = 0; m < match_structs.Count; m++)
+            {
+                var match_struct = match_structs[m];
+                var protoStruct = new ProtocolEnum()
+                {
+                    comment = cleanComment(match_struct.Groups[1].Value),
+                    type = match_struct.Groups[2].Value,
+                };
+                protoStruct.memberList = parseEnumMembers(match_struct.Groups[3].Value);
+
+                if (dic_enum.ContainsKey(protoStruct.type))
+                    throw new Exception("重复的enum定义:" + protoStruct.type);
+                dic_enum.Add(protoStruct.type, protoStruct);
+
+                // text += readParams(item);
+            }
+
+            var singleText = "";
+            foreach (var item in dic_struct.Values)
+            {
+                singleText += generaterStruct(item);
+            }
+
+            foreach (var item in dic_enum.Values)
+            {
+                singleText += generaterEnum(item);
+            }
+
+            //Console.ReadLine();
 
             if (singleMode)
-                FileUtil.writeFile(codeFolderPath + codeTemplate.element_SingleProtocolFile.Attribute("fileName").Value, Encoding.UTF8.GetBytes(codeTemplate.getSingleFileText(text)));
+                FileUtil.writeFile(codeFolderPath + codeTemplate.element_SingleProtocolFile.Attribute("fileName").Value, Encoding.UTF8.GetBytes(codeTemplate.getSingleFileText(singleText)));
 
 
+            var list_message = dic_message.Values.ToList();
+            list_message = (from item in list_message orderby item.id select item).ToList();
             var str_enum = "";
             var str_registerMessage = "";
             var str_createMessage = "";
+
+            str_enum += codeTemplate.getEnumDefinition("None", "0", "");
+
             for (int i = 0; i < list_message.Count; i++)
             {
-                str_enum += codeTemplate.getEnumDefinition(list_message[i].Attribute("name").Value, list_message[i].Attribute("id").Value, readComment(list_message[i]));
+                var msg = list_message[i];
+                str_enum += codeTemplate.getEnumDefinition(msg.type, msg.id.ToString(), msg.comment);
 
-                str_registerMessage += codeTemplate.getMessageRegister(list_message[i].Attribute("name").Value, list_message[i].Attribute("name").Value + "VO");
+                str_registerMessage += codeTemplate.getMessageRegister(msg.type, msg.type);
 
-                str_createMessage += codeTemplate.getMessageCreater(list_message[i].Attribute("name").Value + "VO");
+                str_createMessage += codeTemplate.getMessageCreater(msg.type);
             }
-            str_enum = codeTemplate.getProtocolEnumClass(str_enum);
+            str_enum = codeTemplate.getProtocolEnumClass(codeTemplate.ProtocolEnumName, str_enum, "");
             str_registerMessage = codeTemplate.getMessageRegisterClass(str_registerMessage, str_createMessage);
 
-            FileUtil.writeFile(codeFolderPath + codeTemplate.element_ProtocolEnumClass.Attribute("fileName").Value, Encoding.UTF8.GetBytes(str_enum));
+            FileUtil.writeFile(codeFolderPath + codeTemplate.ProtocolEnumName + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(str_enum));
             FileUtil.writeFile(codeFolderPath + codeTemplate.element_MessageRegisterClass.Attribute("fileName").Value, Encoding.UTF8.GetBytes(str_registerMessage));
 
 
@@ -256,5 +217,243 @@ namespace KLib.net.protocol
 
         }
 
+        private List<ProtocolMember> parseMembers(string content)
+        {
+            var list = new List<ProtocolMember>();
+            var match_members = reg_member.Matches(content);
+            for (int i = 0; i < match_members.Count; i++)
+            {
+                var match_member = match_members[i];
+                var type = match_member.Groups[1].Value;
+                var match_list = reg_memberListCheck.Match(type);
+                var isList = match_list.Groups.Count > 1;
+
+                if (isList)
+                    type = match_list.Groups[1].Value;
+
+                var protoMember = new ProtocolMember()
+                {
+                    isList = isList,
+                    type = type,
+                    name = match_member.Groups[2].Value.TrimEnd(';'),
+                    comment = cleanComment(match_member.Groups[3].Value),
+                };
+                list.Add(protoMember);
+            }
+            return list;
+        }
+
+        private List<ProtocolEnumMember> parseEnumMembers(string content)
+        {
+            var list = new List<ProtocolEnumMember>();
+            var match_members = reg_enumMember.Matches(content);
+            for (int i = 0; i < match_members.Count; i++)
+            {
+                var match_member = match_members[i];
+                var protoMember = new ProtocolEnumMember()
+                {
+                    name = match_member.Groups[1].Value,
+                    //value = Convert.ToInt32(match_member.Groups[2].Value),
+                    comment = cleanComment(match_member.Groups[3].Value),
+                };
+                var valueStr = match_member.Groups[2].Value.TrimEnd(';');
+                try
+                {
+                    protoMember.value = Convert.ToInt32(valueStr);
+                }
+                catch
+                {
+                    throw new Exception(String.Format("转换枚举 {0} 的值 {1} 失败", protoMember.name, valueStr));
+                }
+                list.Add(protoMember);
+            }
+            return list;
+        }
+
+        private string cleanComment(string comment)
+        {
+            return comment.Trim();
+            //comment = comment.Trim();
+            //comment = comment.TrimStart(new char[] { '/' });
+            //return comment;
+        }
+
+        private string clearComment(string content)
+        {
+            var reg = new Regex(@"\/{2,}.*\n");
+            content = reg.Replace(content, @"
+");
+            reg = new Regex(@"(\/\*+[\s\S]*?\*\/)");
+            content = reg.Replace(content, replaceCommentHandler);
+            return content;
+        }
+
+        private string replaceCommentHandler(Match match)
+        {
+
+            var content = match.Groups[1].Value;
+
+            if (content.IndexOf(@"
+") >= 0)
+            {
+                return @"
+";
+            }
+            return " ";
+
+        }
+
+        public string generaterStruct(ProtocolStruct protoStruct)
+        {
+            if (dic_name.ContainsKey(protoStruct.type))
+            {
+                throw new Exception(String.Format("重复的类名:{0}", protoStruct.type));
+            }
+
+            dic_name.Add(protoStruct.type, true);
+
+            string text = "";
+            string singleVOText = "";
+
+            var isMessage = protoStruct.isMessage;
+
+            var pathName = protoStruct.type;
+
+            string str_definition = "";
+            string str_encode = "";
+            string str_decode = "";
+
+            var list_param = protoStruct.memberList;
+            for (int i = 0; i < list_param.Count; i++)
+            {
+                var param = list_param[i];
+                var memberName = param.name;
+                var type = param.type;
+
+                var menberType = ProtocolMemberType.Normal;
+                if (dic_struct.ContainsKey(type))
+                    menberType = ProtocolMemberType.Struct;
+                if (dic_enum.ContainsKey(type))
+                    menberType = ProtocolMemberType.Enum;
+
+                var className = type;
+                if (menberType == ProtocolMemberType.Normal)
+                    className = codeTemplate.getClassName(type);
+
+                if (param.isList == false)
+                {
+                    str_decode += codeTemplate.getDecode(menberType, type, memberName, className);
+                    str_encode += codeTemplate.getEncode(menberType, type, memberName, className);
+                    str_definition += codeTemplate.getDefinition(className, memberName, param.comment);
+                }
+                else
+                {
+                    str_decode += codeTemplate.getArrayDecode(menberType, type, memberName, className);
+                    str_encode += codeTemplate.getArrayEncode(menberType, type, memberName, className);
+                    str_definition += codeTemplate.getArrayDefinition(className, memberName, param.comment);
+                }
+
+            }
+
+            var fileClassName = codeTemplate.getFinalClassName(pathName);
+
+            var typeName = protoStruct.type;
+            if (protoStruct.isMessage == false)
+                typeName = "None";
+            singleVOText = codeTemplate.getProtocolVOText(fileClassName, str_definition, typeName, str_decode, str_encode, protoStruct.comment);
+
+            //if (isMessage)
+            //    singleVOText = codeTemplate.getProtocolVOText(fileClassName, str_definition, protoStruct.type, str_decode, str_encode, protoStruct.comment);
+            //else
+            //    singleVOText = codeTemplate.getStructText(fileClassName, str_definition, str_decode, str_encode, protoStruct.comment);
+
+            if (singleMode)
+                text += singleVOText;
+            else
+                FileUtil.writeFile(voFolderPath + fileClassName + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(singleVOText));
+
+            return text;
+        }
+
+        public string generaterEnum(ProtocolEnum protoEnum)
+        {
+            if (dic_name.ContainsKey(protoEnum.type))
+            {
+                throw new Exception(String.Format("重复的类名:{0}", protoEnum.type));
+            }
+
+            dic_name.Add(protoEnum.type, true);
+
+            string text = "";
+
+            string singleVOText = "";
+
+            var pathName = protoEnum.type;
+
+            string str = "";
+
+            var list_param = protoEnum.memberList;
+            for (int i = 0; i < list_param.Count; i++)
+            {
+                var param = list_param[i];
+                var memberName = param.name;
+
+                str += codeTemplate.getEnumDefinition(param.name, param.value.ToString(), param.comment);
+
+            }
+
+            var fileClassName = codeTemplate.getFinalClassName(pathName);
+
+            var typeName = protoEnum.type;
+            singleVOText = codeTemplate.getProtocolEnumClass(typeName, str, protoEnum.comment);
+
+            if (singleMode)
+                text += singleVOText;
+            else
+                FileUtil.writeFile(voFolderPath + fileClassName + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(singleVOText));
+
+
+            return text;
+        }
+
     }
+
+    public class ProtocolStruct
+    {
+        public int id;
+        public bool isMessage;
+        public string type;
+        public string comment;
+        public List<ProtocolMember> memberList = new List<ProtocolMember>();
+    }
+
+    public class ProtocolMember
+    {
+        public string type;
+        public bool isList;
+        public string name;
+        public string comment;
+    }
+
+    public class ProtocolEnum
+    {
+        public string type;
+        public string comment;
+        public List<ProtocolEnumMember> memberList = new List<ProtocolEnumMember>();
+    }
+
+    public class ProtocolEnumMember
+    {
+        public string name;
+        public int value;
+        public string comment;
+    }
+
+    public enum ProtocolMemberType
+    {
+        Normal,
+        Struct,
+        Enum,
+    }
+
 }

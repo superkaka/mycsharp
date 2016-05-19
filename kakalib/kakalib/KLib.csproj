@@ -115,8 +115,9 @@
     <Compile Include="interfaces\IResourceInfoGenerator.cs" />
     <Compile Include="net\connection\BaseConnection.cs" />
     <Compile Include="net\connection\SocketConnection.cs" />
-    <Compile Include="net\protocol\BaseVO.cs" />
+    <Compile Include="net\protocol\BaseProtocolVO.cs" />
     <Compile Include="net\protocol\PackageTranslator.cs" />
+    <Compile Include="net\protocol\MessageType.cs" />
     <Compile Include="net\protocol\RPCClient.cs" />
     <Compile Include="tools\ExcelGenerater.cs" />
     <Compile Include="tools\UnityAssetBundleBuilder.cs" />

@@ -4,6 +4,7 @@
     <!-- singleMode为false时，vo代码输出的子文件夹路径 -->
     <voFolder>vo</voFolder>
     <classNameTail>VO</classNameTail>
+    <protocolEnumName>MessageType</protocolEnumName>
   </config>
   <definitionMember>
     <![CDATA[//$(comment)
@@ -26,7 +27,7 @@
             $(member) = new $(className)[len_$(member)];
             for (int i = 0; i < len_$(member); i++)
             {
-$(decode)
+                $(decode)
             }
             ]]>
   </decodeArray>
@@ -36,7 +37,7 @@ $(decode)
 			binWriter.Write(len_$(member));
             for (int i = 0; i < len_$(member); i++)
             {
-$(encode)
+                $(encode)
             }
             ]]>
   </encodeArray>
@@ -199,6 +200,18 @@ $(encode)
             ]]>
       </encode>
     </param>
+    <param type="enum" class="enum">
+      <decode>
+        <![CDATA[
+            $(member) = ($(className))binReader.ReadInt32();
+            ]]>
+      </decode>
+      <encode>
+        <![CDATA[
+            binWriter.Write((int)$(member));
+            ]]>
+      </encode>
+    </param>
   </params>
 
   <ProtocolVOClass>
@@ -211,12 +224,12 @@ using KLib.utils;
 namespace protocol.vo
 {
     //$(comment)
-    public class $(className) : BaseVO
+    public class $(className) : BaseProtocolVO
     {
         
         $(definition)
         
-        public $(className)() : base(Protocol.$(messageName))
+        public $(className)() : base(ProtocolType.$(messageName))
         {
 
         }
@@ -236,44 +249,15 @@ namespace protocol.vo
 }
 ]]>
   </ProtocolVOClass>
-  <StructClass>
-    <![CDATA[
-using System;
-using System.IO;
-using System.Text;
-using KLib.utils;
 
-namespace protocol.vo
-{
-    //$(comment)
-    public class $(className)
-    {
-        
-        $(definition)
-        
-        public void decode(EndianBinaryReader binReader)
-        {
-        $(decode)
-        }
-        
-        public void encode(EndianBinaryWriter binWriter)
-        {
-        $(encode)
-        }
-        
-    }
-
-}
-]]>
-  </StructClass>
-
-  <ProtocolEnumClass fileName="Protocol.cs" >
+  <ProtocolEnumClass>
     <![CDATA[
 using System;
 
 namespace protocol
 {
-    public class Protocol
+    //$(comment)
+    public enum $(className)
     {
         $(content)
     }
@@ -283,29 +267,30 @@ namespace protocol
   <definitionEnum>
     <![CDATA[
         //$(comment)
-        public const int $(member) = $(value);
+        $(member) = $(value),
         ]]>
   </definitionEnum>
-  <MessageRegisterClass fileName="MessageRegister.cs" >
+  <MessageCreaterClass fileName="ProtocolVOCreater.cs" >
     <![CDATA[
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using protocol;
 using protocol.vo;
 
 namespace protocol
 {
-    public class MessageRegister
+    public class ProtocolVOCreater
     {
         
-        static public PackageTranslator GetTranslator()
+        private Dictionary<int, Func<BaseVO>> dic_vo = new Dictionary<int, Func<BaseVO>>();
+        
+        public void RegisterCreater(int protocolId, Func<BaseVO> packageCreateFun)
         {
-            var translator = new PackageTranslator();
-            Register(translator);
-            return translator;
+            dic_vo[protocolId] = packageCreateFun;
         }
         
-        static public void Register(PackageTranslator target)
+        public ProtocolVOCreater()
         {
             $(content)
         }
@@ -315,18 +300,10 @@ namespace protocol
     }
 }
 ]]>
-  </MessageRegisterClass>
-  <MessageRegister>
+  </MessageCreaterClass>
+  <MessageRegisterCreater>
     <![CDATA[
-            target.RegisterMessage(Protocol.$(member), Create_$(className));
-        ]]>
-  </MessageRegister>
-  <MessageCreater>
-    <![CDATA[
-        static public BaseVO Create_$(className)()
-        {
-            return new $(className)();
-        }
-        ]]>
-  </MessageCreater>
+            RegisterMessage(Protocol.$(className), $(className).CreateInstance);
+            ]]>
+  </MessageRegisterCreater>
 </root>

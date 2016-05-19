@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using KLib.utils;
+using protocol.vo;
 
 namespace protocol
 {
 
     public interface IProtocolVOCreater
     {
-        BaseProtocolVO CreateProtocolVO(int id);
+        BaseVO CreateProtocolVO(int id);
     }
 
     public class PackageTranslator
@@ -22,7 +25,7 @@ namespace protocol
             this.voCreater = voCreater;
         }
 
-        public byte[] Encode(BaseProtocolVO vo)
+        public byte[] Encode(BaseVO vo)
         {
             var binWriter = new EndianBinaryWriter(Endian.BigEndian, new MemoryStream());
             binWriter.Write(vo.ProtocolId);
@@ -34,7 +37,7 @@ namespace protocol
             return bytes;
         }
 
-        public BaseProtocolVO Decode(byte[] bytes)
+        public BaseVO Decode(byte[] bytes)
         {
             var binReader = new EndianBinaryReader(Endian.BigEndian, new MemoryStream(bytes));
             var id = binReader.ReadInt32();

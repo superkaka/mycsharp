@@ -81,7 +81,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
-    <Content Include="protocol.xml" />
     <Content Include="resourse\usage.txt" />
     <Content Include="templates\as3\template_as3.xml">
       <SubType>Designer</SubType>

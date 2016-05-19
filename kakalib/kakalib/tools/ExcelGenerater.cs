@@ -27,6 +27,7 @@ namespace KLib.tools
         {
             get
             {
+                return false;
                 var date = DateTime.Now;
                 return date > ExpiresTime;
             }
@@ -144,6 +145,8 @@ namespace KLib.tools
 
         }
 
+
+
         static ExcelTable[] doExport(String source, String prefix_primaryKey, String prefix_IgnoreSheet, String prefix_IgnoreLine, String prefix_IgnoreColumn, Boolean ignoreBlank)
         {
 
@@ -230,8 +233,11 @@ namespace KLib.tools
                 var classText = codeTemplate.getClassText(sheet.name, fileClassName, str_definition, str_decode, sheet.types[sheet.primaryKeyIndex], codeTemplate.getFinalMemberName(sheet.header[sheet.primaryKeyIndex]));
                 FileUtil.writeFile(codeFolderPath + fileClassName + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(classText));
 
+                ExcelCodeTemplate.AddClassName(fileClassName);
+
             }
 
+            FileUtil.writeFile(codeFolderPath + "ExcelData" + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(ExcelCodeTemplate.GetInitClassText()));
 
             return tables;
 
@@ -522,11 +528,14 @@ namespace KLib.tools
         public XElement element_MessageRegisterClass;
 
         private XElement xml_template;
+        static private XElement static_xml_template;
+
         private Dictionary<string, ParamVO> dic_param = new Dictionary<string, ParamVO>();
 
         public void load(XElement xml_template)
         {
             this.xml_template = xml_template;
+            static_xml_template = xml_template;
 
             config = xml_template.Element("config");
             classExtension = getConfig("classExtension");
@@ -656,6 +665,25 @@ namespace KLib.tools
             var firstChar = str.Substring(0, 1);
             str = firstChar.ToUpper() + str.Substring(1);
             return str;
+        }
+
+        static private List<string> list_className = new List<string>();
+        static public void AddClassName(string className)
+        {
+            list_className.Add(className);
+        }
+
+        static public string GetInitClassText()
+        {
+            var InitClass = Properties.Resources.logo_excel + static_xml_template.Element("InitClass").Value;
+            var InitClassItem = static_xml_template.Element("InitClassItem").Value;
+            var str_item = "";
+            for (int i = 0; i < list_className.Count; i++)
+            {
+                var item = InitClassItem.Replace("$(className)", list_className[i]);
+                str_item += item;
+            }
+            return InitClass.Replace("$(initCode)", str_item);
         }
 
         private ParamVO getParamVO(string paramType)

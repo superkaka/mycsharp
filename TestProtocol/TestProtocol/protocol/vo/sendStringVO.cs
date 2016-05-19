@@ -9,7 +9,12 @@ namespace protocol.vo
     //
     public class sendStringVO : BaseVO
     {
-        
+
+        static public sendStringVO CreateInstance()
+        {
+            return new sendStringVO();
+        }
+
         //
         public string str;
         

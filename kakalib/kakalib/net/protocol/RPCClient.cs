@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace protocol
 {
-    public delegate void MessageHandler(BaseVO vo);
+    public delegate void MessageHandler(BaseProtocolVO vo);
     public class RPCClient
     {
 
         protected BaseConnection connection;
         protected PackageTranslator packager;
 
-        protected Dictionary<int, MessageHandler> dic_handler = new Dictionary<int, MessageHandler>();
+        protected Dictionary<int, List<MessageHandler>> dic_handler = new Dictionary<int, List<MessageHandler>>();
         public event MessageHandler globalMessageHandler;
         public event Action OnConnectSuccess;
         public event ConnectionEventHandler OnConnectFail;
@@ -40,11 +40,16 @@ namespace protocol
         public void RegisterMessageHandler(int procedureId, MessageHandler handler)
         {
 
-            dic_handler[procedureId] = handler;
+            List<MessageHandler> list_handler;
+            if (dic_handler.TryGetValue(procedureId, out list_handler) == false)
+            {
+                list_handler = dic_handler[procedureId] = new List<MessageHandler>();
+            }
+            list_handler.Add(handler);
 
         }
 
-        public void Call(BaseVO vo)
+        public void Call(BaseProtocolVO vo)
         {
 
             var bytes = packager.Encode(vo);
@@ -64,10 +69,29 @@ namespace protocol
             if (null != globalMessageHandler)
                 globalMessageHandler(vo);
 
-            MessageHandler handler;
-            if (dic_handler.TryGetValue(vo.ProtocolId, out handler))
+            List<MessageHandler> list_handler;
+            if (dic_handler.TryGetValue(vo.ProtocolId, out list_handler))
             {
-                handler(vo);
+                int i = 0;
+                while (i < list_handler.Count)
+                {
+                    var handler = list_handler[i];
+                    //对象被回收了的  自动移除
+                    if (handler.Target == null || handler.Target.ToString() == "null")
+                    {
+                        list_handler.RemoveAt(i);
+                        continue;
+                    }
+                    try
+                    {
+                        handler(vo);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
+                    i++;
+                }
             }
             else
             {
