@@ -25,7 +25,7 @@ namespace protocol
         public byte[] Encode(BaseProtocolVO vo)
         {
             var binWriter = new EndianBinaryWriter(Endian.BigEndian, new MemoryStream());
-            binWriter.Write(vo.ProtocolId);
+            binWriter.Write(vo.MessageId);
             vo.encode(binWriter);
             binWriter.Seek(0, SeekOrigin.Begin);
             int len = (int)binWriter.BaseStream.Length;

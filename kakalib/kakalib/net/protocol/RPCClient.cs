@@ -7,15 +7,14 @@ using System.Threading.Tasks;
 
 namespace protocol
 {
-    public delegate void MessageHandler(BaseProtocolVO vo);
+    
     public class RPCClient
     {
 
         protected BaseConnection connection;
         protected PackageTranslator packager;
 
-        protected Dictionary<int, List<MessageHandler>> dic_handler = new Dictionary<int, List<MessageHandler>>();
-        public event MessageHandler globalMessageHandler;
+        public event CommonMessageHandler globalMessageHandler;
         public event Action OnConnectSuccess;
         public event ConnectionEventHandler OnConnectFail;
         public event ConnectionEventHandler OnConnectClose;
@@ -37,15 +36,10 @@ namespace protocol
 
         }
 
-        public void RegisterMessageHandler(int procedureId, MessageHandler handler)
+        public void RegisterMessageHandler(MessageType messageType, CommonMessageHandler handler)
         {
 
-            List<MessageHandler> list_handler;
-            if (dic_handler.TryGetValue(procedureId, out list_handler) == false)
-            {
-                list_handler = dic_handler[procedureId] = new List<MessageHandler>();
-            }
-            list_handler.Add(handler);
+            ProtocolCenter.RegisterMessageHandler(messageType,handler);
 
         }
 
@@ -69,34 +63,7 @@ namespace protocol
             if (null != globalMessageHandler)
                 globalMessageHandler(vo);
 
-            List<MessageHandler> list_handler;
-            if (dic_handler.TryGetValue(vo.ProtocolId, out list_handler))
-            {
-                int i = 0;
-                while (i < list_handler.Count)
-                {
-                    var handler = list_handler[i];
-                    //对象被回收了的  自动移除
-                    if (handler.Target == null || handler.Target.ToString() == "null")
-                    {
-                        list_handler.RemoveAt(i);
-                        continue;
-                    }
-                    try
-                    {
-                        handler(vo);
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                    }
-                    i++;
-                }
-            }
-            else
-            {
-                Console.WriteLine("过程" + vo.ProtocolId + "缺少处理函数！");
-            }
+            ProtocolCenter.DispatchMessage(vo);
 
         }
 

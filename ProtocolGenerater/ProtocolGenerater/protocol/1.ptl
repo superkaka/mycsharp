@@ -1,30 +1,38 @@
 ﻿
-/**重置 -请求*/
-message HellBreakRoundResetRequest 1001 {
+
+message RequestSendString 1001 {
+	string content
+}
+
+//返回名字
+message ResponseSendString 1002 {
+	string content 内容
+}
+
+请求玩家列表
+message RequestPlayers 2001 {
 
 }
 
-重置 -响应
-message HellBreakRoundResetResponse 1002 {
-    bool			status /状态
-    TaskType	type /****剩余重置次数
-qqq	*/
-    int				maxResetTimes; 最大可重置次数（根据VIP等级计算）
-	List<int> 	herouid  选择出战英雄列表
+返回玩家列表
+message ResponsePlayers 2002 {
+	bool	status
+	list<PlayerInfo>	players 玩家列表
 }
 
-struct TestStruct {
+struct PlayerInfo {
+	long			uid
+	string			name 名字
     bool			status 状态
-    TaskType	type; 剩余重置次数
+    PlayerType	type		类型
     int				maxResetTimes; 最大可重置次数（根据VIP等级计算）
-	List<int> 	herouid  选择出战英雄列表
+	List<int> 	items  道具列表
 }
 
-任务类型
-enum TaskType {
-    TaskTypeMain = 1 主线
-    TaskTypeBranch = 2; 支线
-    TaskTypeDaily = 3 日常
-    TaskTypeStep = 4 阶段
+角色类型
+enum PlayerType {
+    warrior = 1 战士
+    Archer = 2 弓手
+    Priest = 3 牧师
 }
 

@@ -7,23 +7,23 @@ namespace protocol
     public abstract class BaseProtocolVO
     {
 
-        private MessageType protocolType;
-        private int protocolId;
+        private MessageType messageType;
+        private int messageId;
 
         public BaseProtocolVO(MessageType protocolType)
         {
-            this.protocolType = protocolType;
-            this.protocolId = (int)protocolType;
+            this.messageType = protocolType;
+            this.messageId = (int)protocolType;
         }
 
-        public MessageType ProtocolType
+        public MessageType MessageType
         {
-            get { return protocolType; }
+            get { return messageType; }
         }
 
-        public int ProtocolId
+        public int MessageId
         {
-            get { return protocolId; }
+            get { return messageId; }
         }
 
         public void decode(byte[] bytes)

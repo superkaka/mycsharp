@@ -116,8 +116,15 @@
     <Compile Include="net\connection\BaseConnection.cs" />
     <Compile Include="net\connection\SocketConnection.cs" />
     <Compile Include="net\protocol\BaseProtocolVO.cs" />
+    <Compile Include="net\protocol\generated\MessageType.cs" />
+    <Compile Include="net\protocol\generated\PlayerInfo.cs" />
+    <Compile Include="net\protocol\generated\PlayerType.cs" />
+    <Compile Include="net\protocol\generated\ProtocolCenter.cs" />
+    <Compile Include="net\protocol\generated\RequestPlayers.cs" />
+    <Compile Include="net\protocol\generated\RequestSendString.cs" />
+    <Compile Include="net\protocol\generated\ResponsePlayers.cs" />
+    <Compile Include="net\protocol\generated\ResponseSendString.cs" />
     <Compile Include="net\protocol\PackageTranslator.cs" />
-    <Compile Include="net\protocol\MessageType.cs" />
     <Compile Include="net\protocol\RPCClient.cs" />
     <Compile Include="tools\ExcelGenerater.cs" />
     <Compile Include="tools\UnityAssetBundleBuilder.cs" />
@@ -181,6 +188,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

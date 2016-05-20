@@ -6,6 +6,7 @@ using System.Xml.Linq;
 using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using KLib.tools;
 
 namespace KLib.net.protocol
@@ -31,11 +32,11 @@ namespace KLib.net.protocol
         private bool singleMode;
         private string voFolder;
 
-        private Regex reg_message = new Regex(@"\s+([^}]*)message\s+(\S+)\s+(\d+)\s+{([^}]*)}");
-        private Regex reg_struct = new Regex(@"\s+([^}]*)struct\s+(\S+)\s+{([^}]*)}");
-        private Regex reg_enum = new Regex(@"\s+([^}]*)enum\s+(\S+)\s+{([^}]*)}");
+        private Regex reg_message = new Regex(@"\s+([^}]*)message\s+(\S+)\s+(\d+)\s+{([^}]*)}", RegexOptions.IgnoreCase);
+        private Regex reg_struct = new Regex(@"\s+([^}]*)struct\s+(\S+)\s+{([^}]*)}", RegexOptions.IgnoreCase);
+        private Regex reg_enum = new Regex(@"\s+([^}]*)enum\s+(\S+)\s+{([^}]*)}", RegexOptions.IgnoreCase);
         private Regex reg_member = new Regex(@"(\S+)\s+(\S+)([^$]*?)$", RegexOptions.Multiline);
-        private Regex reg_memberListCheck = new Regex(@"List<(\S+)>");
+        private Regex reg_memberListCheck = new Regex(@"List<(\S+)>", RegexOptions.IgnoreCase);
         private Regex reg_enumMember = new Regex(@"(\S+)\s*=\s*(\d+)([^$]*?)$", RegexOptions.Multiline);
 
 
@@ -53,10 +54,21 @@ namespace KLib.net.protocol
             codeFolderPath += "/";
             this.codeFolderPath = codeFolderPath;
 
-            if (!Directory.Exists(codeFolderPath))
+            if (Directory.Exists(codeFolderPath))
             {
-                Directory.CreateDirectory(codeFolderPath);
+                try
+                {
+                    Directory.Delete(codeFolderPath, true);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("删除目录失败，重试..");
+                    Thread.Sleep(50);
+                    Directory.Delete(codeFolderPath, true);
+                }
             }
+            Thread.Sleep(50);
+            Directory.CreateDirectory(codeFolderPath);
 
             if (!singleMode)
             {
@@ -176,6 +188,7 @@ namespace KLib.net.protocol
             var str_enum = "";
             var str_registerMessage = "";
             var str_createMessage = "";
+            var str_dispatchMessage = "";
 
             str_enum += codeTemplate.getEnumDefinition("None", "0", "");
 
@@ -187,9 +200,10 @@ namespace KLib.net.protocol
                 str_registerMessage += codeTemplate.getMessageRegister(msg.type, msg.type);
 
                 str_createMessage += codeTemplate.getMessageCreater(msg.type);
+                str_dispatchMessage += codeTemplate.getMessageDispatcher(msg.type);
             }
             str_enum = codeTemplate.getProtocolEnumClass(codeTemplate.ProtocolEnumName, str_enum, "");
-            str_registerMessage = codeTemplate.getMessageRegisterClass(str_registerMessage, str_createMessage);
+            str_registerMessage = codeTemplate.getMessageRegisterClass(str_registerMessage, str_createMessage, str_dispatchMessage);
 
             FileUtil.writeFile(codeFolderPath + codeTemplate.ProtocolEnumName + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(str_enum));
             FileUtil.writeFile(codeFolderPath + codeTemplate.element_MessageRegisterClass.Attribute("fileName").Value, Encoding.UTF8.GetBytes(str_registerMessage));

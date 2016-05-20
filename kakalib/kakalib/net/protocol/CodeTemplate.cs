@@ -42,6 +42,8 @@ namespace KLib.net.protocol
         private string template_messageRegister;
         private string template_messageCreater;
 
+        private string template_messageDispatcherItem;
+
         public XElement element_SingleProtocolFile;
         public XElement element_ProtocolEnumClass;
         public XElement element_MessageRegisterClass;
@@ -88,6 +90,10 @@ namespace KLib.net.protocol
             var element_MessageCreater = xml_template.Element("MessageCreateFun");
             if (element_MessageCreater != null)
                 template_messageCreater = element_MessageCreater.Value;
+
+            var element_messageDispatcher = xml_template.Element("MessageDispatcherItem");
+            if (element_messageDispatcher != null)
+                template_messageDispatcherItem = element_messageDispatcher.Value;
 
             var list_type = xml_template.Element("params").Elements("param");
             foreach (var item in list_type)
@@ -270,14 +276,24 @@ namespace KLib.net.protocol
             return result;
         }
 
-        public string getMessageRegisterClass(string content, string creater)
+        public string getMessageRegisterClass(string content, string creater, string dispatch)
         {
             var text = template_messageRegisterClass;
             text = text.Replace("$(content)", content);
             text = text.Replace("$(creater)", creater);
+            text = text.Replace("$(dispatch)", dispatch);
             text = text.Replace("\n", "\r\n");
             text = text.Replace("\r\r\n", "\r\n");
             return text;
+        }
+
+        public string getMessageDispatcher(string messageName)
+        {
+            if (template_messageDispatcherItem == null)
+                return "";
+            var result = template_messageDispatcherItem.Replace("$(protocolEnumName)", protocolEnumName);
+            result = result.Replace("$(messageName)", messageName);
+            return result;
         }
 
     }

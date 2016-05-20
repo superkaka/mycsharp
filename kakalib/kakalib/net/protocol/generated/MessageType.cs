@@ -19,5 +19,17 @@ namespace protocol
         //
         None = 0,
         
+        //
+        RequestSendString = 1001,
+        
+        //
+        ResponseSendString = 1002,
+        
+        //请求玩家列表
+        RequestPlayers = 2001,
+        
+        //返回玩家列表
+        ResponsePlayers = 2002,
+        
     }
 }
