@@ -26,6 +26,8 @@ struct PlayerInfo {
     bool			status 状态
     PlayerType	type		类型
     int				maxResetTimes; 最大可重置次数（根据VIP等级计算）
+	date			createTime  创建时间
+	float			fff
 	List<int> 	items  道具列表
 }
 

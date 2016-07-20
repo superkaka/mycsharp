@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using KLib.net.connection;
+using KLib;
 using protocol;
-using protocol.vo;
 
 namespace TestProtocol
 {
@@ -20,10 +19,10 @@ namespace TestProtocol
             translator = new PackageTranslator(new ProtocolCenter());
             connection = new SocketConnection("127.0.0.1", 7666);
             client = new RPCClient(connection, translator);
-            client.RegisterMessageHandler(MessageType.ResponseSendString, ResponseSendString);
+            ProtocolCenter.RegisterMessageHandler(MessageType.ResponseSendString, ResponseSendString);
             //client.RegisterMessageHandler(MessageType.ResponsePlayers, ResponsePlayers);
             ResponsePlayers.RegisterHandler(onResponsePlayers);
-            client.globalMessageHandler += globalMessageHandler;
+            ProtocolCenter.RegisterGlobalMessageHandler(globalMessageHandler);
 
             client.OnConnectSuccess += OnConnectSuccess;
             client.OnConnectFail += OnConnectFail;
@@ -51,7 +50,7 @@ namespace TestProtocol
                     sendStr.content = input;
                     client.Call(sendStr);
                 }
-                
+
             }
 
 
@@ -87,7 +86,7 @@ namespace TestProtocol
 
         private void globalMessageHandler(BaseProtocolVO baseVO)
         {
-
+            Console.WriteLine("收到消息:" + baseVO);
         }
 
         void OnData(byte[] bytes)

@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace KLib.events
+namespace KLib
 {
-    public class Event
+    public delegate void ExtensionEventHandler(KEvent evt);
+    public class KEvent
     {
 
         private string type;
@@ -22,19 +23,21 @@ namespace KLib.events
         private Object sender;
         public Object Sender
         {
-            set
-            {
-                if (sender != null)
-                    throw new Exception("The property \"Sender\" can not change");
-                sender = value;
-            }
+            set { sender = value; }
             get { return sender; }
         }
 
-        public Event(string type, Object data = null)
+        public KEvent(string type, Object data = null)
         {
             this.type = type;
             this.data = data;
+        }
+
+        public virtual KEvent clone()
+        {
+            var evt = new KEvent(type, data);
+            evt.sender = sender;
+            return evt;
         }
 
     }

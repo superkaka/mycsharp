@@ -1,46 +1,55 @@
 ﻿<root>
   <config language="C#">
+    <!-- 类文件扩展名 -->
     <classExtension>.cs</classExtension>
-    <!-- singleMode为false时，vo代码输出的子文件夹路径 -->
+    <!-- 消息结构体代码相对于输出目录的子目录名 -->
     <voFolder></voFolder>
+    <!-- 消息结构体类名可选增加的后缀 -->
     <classNameTail></classNameTail>
+    <!-- 消息枚举名 -->
     <protocolEnumName>MessageType</protocolEnumName>
   </config>
   <definitionMember>
-    <![CDATA[//$(comment)
+    <![CDATA[
+        /// <summary>
+        /// $(comment)
+        /// </summary>
         public $(className) $(member);
         ]]>
   </definitionMember>
-  <definitionArray>
-    <![CDATA[//$(comment)
+  <definitionList>
+    <![CDATA[
+        /// <summary>
+        /// $(comment)
+        /// </summary>
         public $(className)[] $(member);
         ]]>
-  </definitionArray>
-  <accessArray>
+  </definitionList>
+  <accessList>
     <![CDATA[
     $(member)[i]
     ]]>
-  </accessArray>
-  <decodeArray>
+  </accessList>
+  <decodeList>
     <![CDATA[
-            var len_$(member) = binReader.ReadUInt16();
+            var len_$(member) = binReader.ReadInt32();
             $(member) = new $(className)[len_$(member)];
             for (int i = 0; i < len_$(member); i++)
             {
                 $(decode)
             }
             ]]>
-  </decodeArray>
-  <encodeArray>
+  </decodeList>
+  <encodeList>
     <![CDATA[
-			ushort len_$(member) = (ushort)$(member).Length;
-			binWriter.Write(len_$(member));
+            int len_$(member) = $(member).Length;
+            binWriter.Write(len_$(member));
             for (int i = 0; i < len_$(member); i++)
             {
                 $(encode)
             }
             ]]>
-  </encodeArray>
+  </encodeList>
   <params>
     <param type="byte" class="sbyte">
       <decode>
@@ -54,7 +63,7 @@
             ]]>
       </encode>
     </param>
-    <param type="Bin" class="byte[]">
+    <param type="bin" class="byte[]">
       <decode>
         <![CDATA[
             $(member) = binReader.ReadBytes(binReader.ReadInt32());
@@ -151,7 +160,7 @@
             ]]>
       </encode>
     </param>
-    <param type="float" class="double">
+    <param type="float" class="float">
       <decode>
         <![CDATA[
             $(member) = binReader.ReadFloat();
@@ -166,12 +175,12 @@
     <param type="string" class="string">
       <decode>
         <![CDATA[
-            $(member) = binReader.ReadUTF();
+            $(member) = binReader.ReadString();
             ]]>
       </decode>
       <encode>
         <![CDATA[
-            binWriter.WriteUTF($(member));
+            binWriter.Write($(member));
             ]]>
       </encode>
     </param>
@@ -220,18 +229,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using KLib.utils;
+using KLib;
 
-namespace protocol.vo
+namespace protocol
 {
-    //$(comment)
-    public class $(className) : BaseProtocolVO
+    /// <summary>
+    /// $(comment)
+    /// </summary>
+    public class $(className) : BaseProtocolVOGeneric<$(className)>
     {
-        
-        static public $(className) CreateInstance()
-        {
-            return new $(className)();
-        }
         
         $(definition)
         
@@ -240,47 +246,16 @@ namespace protocol.vo
 
         }
         
-        override public void decode(EndianBinaryReader binReader)
+        override public void decode(ProtocolBinaryReader binReader)
         {
         $(decode)
         }
         
-        override public void encode(EndianBinaryWriter binWriter)
+        override public void encode(ProtocolBinaryWriter binWriter)
         {
         $(encode)
         }
         
-        public delegate void MessageHandler($(className) msg);
-        static private List<MessageHandler> list_handler = new List<MessageHandler>();
-        
-        static public void RegisterHandler(MessageHandler handler)
-        {
-            list_handler.Add(handler);
-        }
-
-        static public void CallHandler($(className) msg)
-        {
-            int i = 0;
-            while (i < list_handler.Count)
-            {
-                var handler = list_handler[i];
-                //对象被回收了的  自动移除
-                if (handler.Target == null || handler.Target.ToString() == "null")
-                {
-                    list_handler.RemoveAt(i);
-                    continue;
-                }
-                try
-                {
-                    handler(msg);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-                i++;
-            }
-        }
     }
 
 }
@@ -293,7 +268,9 @@ using System;
 
 namespace protocol
 {
-    //$(comment)
+    /// <summary>
+    /// $(comment)
+    /// </summary>
     public enum $(className)
     {
         $(content)
@@ -303,87 +280,27 @@ namespace protocol
   </ProtocolEnumClass>
   <definitionEnum>
     <![CDATA[
-        //$(comment)
+        /// <summary>
+        /// $(comment)
+        /// </summary>
         $(member) = $(value),
         ]]>
   </definitionEnum>
-  <MessageCreaterClass fileName="ProtocolCenter.cs" >
+  <MessageCenterClass fileName="ProtocolCenter.cs" >
     <![CDATA[
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using protocol.vo;
-
 namespace protocol
 {
-    public delegate void CommonMessageHandler(BaseProtocolVO vo);
-    public class ProtocolCenter : IProtocolVOCreater
+    
+    public partial class ProtocolCenter : IProtocolVOCreater
     {
-        
-        private Dictionary<int, Func<BaseProtocolVO>> dic_creater = new Dictionary<int, Func<BaseProtocolVO>>();
-        
-        static private Dictionary<MessageType, List<CommonMessageHandler>> dic_handler = new Dictionary<MessageType, List<CommonMessageHandler>>();
-        
-        public BaseProtocolVO CreateProtocolVO(int messageId)
-        {
-            return dic_creater[messageId]();
-        }
-        
-        public BaseProtocolVO CreateProtocolVO(MessageType messageType)
-        {
-            return CreateProtocolVO((int)messageType);
-        }
-        
-        public void RegisterCreater(MessageType messageType, Func<BaseProtocolVO> packageCreateFun)
-        {
-            dic_creater[(int)messageType] = packageCreateFun;
-        }
-        
-        static public void RegisterMessageHandler(MessageType messageType, CommonMessageHandler handler)
-        {
-            
-            List<CommonMessageHandler> list_handler;
-            if (dic_handler.TryGetValue(messageType, out list_handler) == false)
-            {
-                list_handler = dic_handler[messageType] = new List<CommonMessageHandler>();
-            }
-            list_handler.Add(handler);
-
-        }
         
         public ProtocolCenter()
         {
             $(content)
         }
         
-        static public void DispatchMessage(BaseProtocolVO msg)
+        static public void DispatchProtocolClassMessage(BaseProtocolVO msg)
         {
-            
-            List<CommonMessageHandler> list_handler;
-            if (dic_handler.TryGetValue(msg.MessageType, out list_handler))
-            {
-                int i = 0;
-                while (i < list_handler.Count)
-                {
-                    var handler = list_handler[i];
-                    //对象被回收了的  自动移除
-                    if (handler.Target == null || handler.Target.ToString() == "null")
-                    {
-                        list_handler.RemoveAt(i);
-                        continue;
-                    }
-                    try
-                    {
-                        handler(msg);
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                    }
-                    i++;
-                }
-            }
             
             switch (msg.MessageType)
             {
@@ -396,7 +313,7 @@ $(dispatch)
     }
 }
 ]]>
-  </MessageCreaterClass>
+  </MessageCenterClass>
   <MessageRegisterCreater>
     <![CDATA[
             RegisterCreater(MessageType.$(className), $(className).CreateInstance);

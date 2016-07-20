@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using System.Text;
 using System.Collections;
 using System.Data.OleDb;
-using KLib.data;
-using KLib.interfaces;
-using KLib.tools;
-using KLib.enums;
+using KLib;
 using System.Data;
 using System.IO;
 
 
-namespace KLib.tools
+namespace KLib
 {
     public class ExcelUtil
     {
@@ -163,7 +160,7 @@ namespace KLib.tools
 
             }
 
-            KTable[] tables = (KTable[])sheets.ToArray(Type.GetType("KLib.data.KTable"));
+            KTable[] tables = (KTable[])sheets.ToArray(Type.GetType("KLib.KTable"));
 
             if (merge)
             {

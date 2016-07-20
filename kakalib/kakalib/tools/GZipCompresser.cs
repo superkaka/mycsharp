@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
-using KLib.interfaces;
+using KLib;
 using Ionic.Zlib;
 
-namespace KLib.tools
+namespace KLib
 {
     public class GZipCompresser : ICompresser
     {

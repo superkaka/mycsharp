@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Collections;
-using KLib.net.rpc;
+using KLib;
 using System.Data;
 
 
-namespace KLib.data
+namespace KLib
 {
     public class KDataPackager
     {

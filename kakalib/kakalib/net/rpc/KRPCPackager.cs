@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using KLib.data;
+using KLib;
 
-namespace KLib.net.rpc
+namespace KLib
 {
     public class KRPCPackager : IRPCPackager
     {

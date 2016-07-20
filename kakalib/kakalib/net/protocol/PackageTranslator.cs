@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using KLib.utils;
+using KLib;
 
 namespace protocol
 {
@@ -24,7 +24,7 @@ namespace protocol
 
         public byte[] Encode(BaseProtocolVO vo)
         {
-            var binWriter = new EndianBinaryWriter(Endian.BigEndian, new MemoryStream());
+            var binWriter = new ProtocolBinaryWriter(new MemoryStream());
             binWriter.Write(vo.MessageId);
             vo.encode(binWriter);
             binWriter.Seek(0, SeekOrigin.Begin);
@@ -36,7 +36,7 @@ namespace protocol
 
         public BaseProtocolVO Decode(byte[] bytes)
         {
-            var binReader = new EndianBinaryReader(Endian.BigEndian, new MemoryStream(bytes));
+            var binReader = new ProtocolBinaryReader(new MemoryStream(bytes));
             var id = binReader.ReadInt32();
 
             var vo = voCreater.CreateProtocolVO(id);

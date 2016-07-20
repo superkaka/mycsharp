@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace KLib.enums
+namespace KLib
 {
     public enum CompressOption
     {

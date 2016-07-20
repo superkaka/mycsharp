@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using protocol;
-using protocol.vo;
 using System.Net.Sockets;
 
 namespace SocketServer
@@ -16,32 +15,44 @@ namespace SocketServer
         {
 
             server = new RPCServer(new TestServer(), new PackageTranslator(new ProtocolCenter()));
-            server.globalMessageHandler = globalHandler;
-            server.RegisterMessageHandler(MessageType.RequestSendString, RequestSendString);
-            server.RegisterMessageHandler(MessageType.RequestPlayers, RequestPlayers);
+            ProtocolCenter.RegisterGlobalMessageHandler(globalHandler);
+            ProtocolCenter.RegisterMessageHandler(MessageType.RequestSendString, doRequestSendString);
+            ProtocolCenter.RegisterMessageHandler(MessageType.RequestPlayers, doRequestPlayers);
+            RequestSendString.RegisterHandler(onRequestSendString);
+            RequestPlayers.RegisterHandler(onRequestPlayers);
             server.StartListen(7666);
 
             Console.ReadLine();
 
         }
 
-        static void globalHandler(BaseProtocolVO baseVO, object client)
+        static void globalHandler(BaseProtocolVO baseVO)
         {
-            Console.WriteLine(String.Format("收到协议:{0}", baseVO.MessageType));
+            Console.WriteLine(String.Format("从[{0}]收到协议:{1}", baseVO.customData, baseVO.MessageType));
 
             //发回所有收到的消息
             //server.Send(baseVO, client);
         }
 
-        static void RequestSendString(BaseProtocolVO baseVO, object client)
+        static void onRequestSendString(RequestSendString vo)
+        {
+            Console.WriteLine("onRequestSendString " + vo.content);
+        }
+
+        static void doRequestSendString(BaseProtocolVO baseVO)
         {
             var vo = (RequestSendString)baseVO;
             var response = ResponseSendString.CreateInstance();
             response.content = vo.content;
-            server.Send(response, client);
+            server.Send(response, baseVO.customData);
         }
 
-        static void RequestPlayers(BaseProtocolVO baseVO, object client)
+        static void onRequestPlayers(RequestPlayers vo)
+        {
+            Console.WriteLine("onRequestPlayers " + vo.customData);
+        }
+
+        static void doRequestPlayers(BaseProtocolVO baseVO)
         {
             var vo = (RequestPlayers)baseVO;
 
@@ -50,12 +61,14 @@ namespace SocketServer
             {
                 players[i - 1] = new PlayerInfo()
                 {
-                    uid = i + 1000,
+                    uid = i + 20000,
                     name = "qqq" + i,
                     status = i % 2 == 0,
                     type = (PlayerType)i,
                     maxResetTimes = i,
-                    items = new int[] { 111, 222, 99999 },
+                    fff = i * 100 + i * 0.11111f,
+                    createTime = DateTime.Now,
+                    items = new[] { 111, 222, 777 },
                 };
             }
             var response = new ResponsePlayers()
@@ -63,7 +76,7 @@ namespace SocketServer
                 status = true,
                 players = players,
             };
-            server.Send(response, client);
+            server.Send(response, baseVO.customData);
         }
 
     }

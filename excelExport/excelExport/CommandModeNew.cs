@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
-using KLib.enums;
-using KLib.tools;
-using KLib.utils;
+using KLib;
 
 namespace excelExport
 {
@@ -86,7 +84,20 @@ namespace excelExport
                 if (fileExt.IndexOf(".") < 0)
                     fileExt = "." + fileExt;
 
+                if (args.ContainsKey("commentRowNum"))
+                    ExcelGenerater.commentRowNum = Convert.ToInt32(args["commentRowNum"]);
+
+                if (args.ContainsKey("fieldNameRowNum"))
+                    ExcelGenerater.fieldNameRowNum = Convert.ToInt32(args["fieldNameRowNum"]);
+
+                if (args.ContainsKey("typeRowNum"))
+                    ExcelGenerater.typeRowNum = Convert.ToInt32(args["typeRowNum"]);
+
+                if (args.ContainsKey("dataRowStartNum"))
+                    ExcelGenerater.dataRowStartNum = Convert.ToInt32(args["dataRowStartNum"]);
+#if !DEBUG
                 try
+#endif
                 {
 
                     ExcelGenerater.templatePath = args["template"];
@@ -96,12 +107,19 @@ namespace excelExport
                     ExcelGenerater.export(inputPathList, output, compress, prefix_primaryKey, prefix_IgnoreSheet, prefix_IgnoreLine, prefix_IgnoreColumn, ignoreBlank);
 
                 }
+#if !DEBUG
                 catch (Exception e)
                 {
                     Console.WriteLine("出现异常:");
                     Console.WriteLine(e.Message);
                     Console.ReadLine();
                 }
+#endif
+#if DEBUG
+                Console.WriteLine();
+                Console.WriteLine("已完成");
+                Console.ReadLine();
+#endif
             }
             else
             {

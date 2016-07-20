@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 
-namespace KLib.net.protocol
+namespace KLib
 {
     public class CodeTemplate
     {
@@ -29,11 +29,11 @@ namespace KLib.net.protocol
 
         private string template_singleFile;
         private string template_class;
-        private string template_arrayDecode;
-        private string template_arrayEncode;
-        private string template_arrayAccess;
+        private string template_listDecode;
+        private string template_listEncode;
+        private string template_listAccess;
         private string template_definitionMember;
-        private string template_definitionArray;
+        private string template_definitionList;
 
         private string template_enumClass;
         private string template_enumDefinition;
@@ -72,17 +72,17 @@ namespace KLib.net.protocol
             template_class = xml_template.Element("ProtocolVOClass").Value;
             template_class = Properties.Resources.logo_protocol + template_class;
             template_definitionMember = xml_template.Element("definitionMember").Value;
-            template_definitionArray = xml_template.Element("definitionArray").Value;
-            template_arrayDecode = xml_template.Element("decodeArray").Value;
-            template_arrayEncode = xml_template.Element("encodeArray").Value;
-            template_arrayAccess = xml_template.Element("accessArray").Value.Trim();
+            template_definitionList = xml_template.Element("definitionList").Value;
+            template_listDecode = xml_template.Element("decodeList").Value;
+            template_listEncode = xml_template.Element("encodeList").Value;
+            template_listAccess = xml_template.Element("accessList").Value.Trim();
 
             element_ProtocolEnumClass = xml_template.Element("ProtocolEnumClass");
             template_enumClass = element_ProtocolEnumClass.Value;
             template_enumClass = Properties.Resources.logo_protocol + template_enumClass;
             template_enumDefinition = xml_template.Element("definitionEnum").Value;
 
-            element_MessageRegisterClass = xml_template.Element("MessageCreaterClass");
+            element_MessageRegisterClass = xml_template.Element("MessageCenterClass");
             template_messageRegisterClass = element_MessageRegisterClass.Value;
             template_messageRegisterClass = Properties.Resources.logo_protocol + template_messageRegisterClass;
             template_messageRegister = xml_template.Element("MessageRegisterCreater").Value;
@@ -140,11 +140,11 @@ namespace KLib.net.protocol
             return result;
         }
 
-        public string getArrayDecode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
+        public string getListDecode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
         {
-            var arrayMember = template_arrayAccess.Replace(mark_member, member);
+            var arrayMember = template_listAccess.Replace(mark_member, member);
             var decode = getDecode(memberType, paramType, arrayMember, structClassName);
-            var result = template_arrayDecode.Replace("$(decode)", decode.Trim());
+            var result = template_listDecode.Replace("$(decode)", decode.Trim());
             result = result.Replace(mark_member, member);
             result = result.Replace(mark_className, structClassName);
             return result;
@@ -158,11 +158,11 @@ namespace KLib.net.protocol
             return result;
         }
 
-        public string getArrayEncode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
+        public string getListEncode(ProtocolMemberType memberType, string paramType, string member, string structClassName = "structClassName")
         {
-            var arrayMember = template_arrayAccess.Replace(mark_member, member);
+            var arrayMember = template_listAccess.Replace(mark_member, member);
             var encode = getEncode(memberType, paramType, arrayMember, structClassName);
-            var result = template_arrayEncode.Replace("$(encode)", encode.Trim());
+            var result = template_listEncode.Replace("$(encode)", encode.Trim());
             result = result.Replace(mark_member, member);
             result = result.Replace(mark_className, structClassName);
             return result;
@@ -178,7 +178,7 @@ namespace KLib.net.protocol
 
         public string getArrayDefinition(string className, string member, string comment)
         {
-            var result = template_definitionArray.Replace(mark_className, className);
+            var result = template_definitionList.Replace(mark_className, className);
             result = result.Replace(mark_member, member);
             result = result.Replace(mark_comment, comment);
             return result;

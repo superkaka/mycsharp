@@ -7,9 +7,9 @@ using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
-using KLib.tools;
+using KLib;
 
-namespace KLib.net.protocol
+namespace KLib
 {
     public class CodeGenerater
     {
@@ -286,10 +286,8 @@ namespace KLib.net.protocol
 
         private string cleanComment(string comment)
         {
-            return comment.Trim();
-            //comment = comment.Trim();
-            //comment = comment.TrimStart(new char[] { '/' });
-            //return comment;
+            comment= comment.Trim();
+            return comment;
         }
 
         private string clearComment(string content)
@@ -362,8 +360,8 @@ namespace KLib.net.protocol
                 }
                 else
                 {
-                    str_decode += codeTemplate.getArrayDecode(menberType, type, memberName, className);
-                    str_encode += codeTemplate.getArrayEncode(menberType, type, memberName, className);
+                    str_decode += codeTemplate.getListDecode(menberType, type, memberName, className);
+                    str_encode += codeTemplate.getListEncode(menberType, type, memberName, className);
                     str_definition += codeTemplate.getArrayDefinition(className, memberName, param.comment);
                 }
 

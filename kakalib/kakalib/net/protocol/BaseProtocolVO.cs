@@ -1,11 +1,13 @@
 using System;
 using System.IO;
-using KLib.utils;
+using KLib;
 
 namespace protocol
 {
     public abstract class BaseProtocolVO
     {
+
+        public object customData;
 
         private MessageType messageType;
         private int messageId;
@@ -28,18 +30,18 @@ namespace protocol
 
         public void decode(byte[] bytes)
         {
-            var binReader = new EndianBinaryReader(Endian.BigEndian, new MemoryStream(bytes));
+            var binReader = new ProtocolBinaryReader(new MemoryStream(bytes));
             decode(binReader);
         }
 
         //子类覆写
-        public virtual void decode(EndianBinaryReader binReader)
+        public virtual void decode(ProtocolBinaryReader binReader)
         {
 
         }
 
         //子类覆写
-        public virtual void encode(EndianBinaryWriter binWriter)
+        public virtual void encode(ProtocolBinaryWriter binWriter)
         {
 
         }

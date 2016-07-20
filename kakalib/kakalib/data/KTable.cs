@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Data;
 
-namespace KLib.data
+namespace KLib
 {
     public class KTable
     {

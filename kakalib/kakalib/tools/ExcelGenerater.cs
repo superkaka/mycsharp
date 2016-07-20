@@ -3,18 +3,15 @@ using System.Collections.Generic;
 using System.Text;
 using System.Collections;
 using System.Data.OleDb;
-using KLib.interfaces;
-using KLib.tools;
-using KLib.enums;
+using KLib;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using KLib.utils;
 using System.Text.RegularExpressions;
 
 
-namespace KLib.tools
+namespace KLib
 {
     public class ExcelGenerater
     {
@@ -22,6 +19,10 @@ namespace KLib.tools
         static public string templatePath;
         static public Endian endian;
         static public string fileExt = ".kk";
+        static public int commentRowNum = 1;
+        static public int fieldNameRowNum = 2;
+        static public int typeRowNum = 3;
+        static public int dataRowStartNum = 4;
 
         static public bool invalid
         {
@@ -127,6 +128,11 @@ namespace KLib.tools
 
         static public void export(String[] inputPathList, String outputPath, CompressOption op, String prefix_primaryKey, String prefix_IgnoreSheet, String prefix_IgnoreLine, String prefix_IgnoreColumn, Boolean ignoreBlank)
         {
+
+            commentRowNum--;
+            fieldNameRowNum--;
+            typeRowNum--;
+            dataRowStartNum--;
 
             int i = 0;
             int len = inputPathList.Length;
@@ -237,7 +243,7 @@ namespace KLib.tools
 
             }
 
-            FileUtil.writeFile(codeFolderPath + "ExcelData" + codeTemplate.ClassExtension, Encoding.UTF8.GetBytes(ExcelCodeTemplate.GetInitClassText()));
+            FileUtil.writeFile(codeFolderPath + codeTemplate.GetInitClassFileName(), Encoding.UTF8.GetBytes(codeTemplate.GetInitClassText()));
 
             return tables;
 
@@ -292,14 +298,14 @@ namespace KLib.tools
                 ///消除空白行
                 int maxColumn = header.Length;
                 int row = dt.Rows.Count - 1;
-                while (row >= 0)
+                while (row >= dataRowStartNum)
                 {
                     Boolean hasData = false;
                     DataRow dataRow = dt.Rows[row];
                     int column = 0;
                     while (column < maxColumn)
                     {
-                        if (dataRow[column].ToString() != "")
+                        if (dataRow[column].ToString().Trim() != "")
                         {
                             hasData = true;
                             break;
@@ -317,7 +323,7 @@ namespace KLib.tools
             }
 
             int i = dt.Rows.Count - 1;
-            while (i >= 0)
+            while (i >= dataRowStartNum)
             {
                 //忽略行
                 if (isPrefix(dt.Rows[i][0].ToString(), prefix_IgnoreLine))
@@ -330,7 +336,7 @@ namespace KLib.tools
             header = new Object[dt.Rows[0].ItemArray.Length];
             dt.Rows[0].ItemArray.CopyTo(header, 0);
 
-
+            /*
             i = header.Length - 1;
             while (i >= 0)
             {
@@ -341,26 +347,29 @@ namespace KLib.tools
                 }
                 i--;
             }
+            */
 
+            header = new Object[dt.Rows[fieldNameRowNum].ItemArray.Length];
+            dt.Rows[fieldNameRowNum].ItemArray.CopyTo(header, 0);
 
-            header = new Object[dt.Rows[1].ItemArray.Length];
-            dt.Rows[1].ItemArray.CopyTo(header, 0);
+            var row_types = new Object[dt.Rows[typeRowNum].ItemArray.Length];
+            dt.Rows[typeRowNum].ItemArray.CopyTo(row_types, 0);
 
-            if (ignoreBlank)
+            //if (ignoreBlank)
             {
-                ///消除空白列
+                ///消除未定义表头列(字段名、字段类型)
                 int column = header.Length - 1;
                 while (column >= 0)
                 {
-                    if (header[column].ToString() == "")
+                    if (header[column].ToString().Trim() == "" || row_types[column].ToString().Trim() == "")
                     {
                         dt.Columns.RemoveAt(column);
                     }
                     column--;
                 }
 
-                header = new String[dt.Rows[1].ItemArray.Length];
-                dt.Rows[1].ItemArray.CopyTo(header, 0);
+                header = new String[dt.Rows[fieldNameRowNum].ItemArray.Length];
+                dt.Rows[fieldNameRowNum].ItemArray.CopyTo(header, 0);
 
             }
 
@@ -383,17 +392,17 @@ namespace KLib.tools
                 header[i_header] = str_header;
             }
 
-            var comments = new String[dt.Rows[0].ItemArray.Length];
+            var comments = new String[dt.Rows[commentRowNum].ItemArray.Length];
             for (int i_comments = 0; i_comments < comments.Length; i_comments++)
             {
-                comments[i_comments] = dt.Rows[0].ItemArray[i_comments].ToString();
+                comments[i_comments] = dt.Rows[commentRowNum].ItemArray[i_comments].ToString();
             }
 
             //数组相关解析
             var reg_array = new Regex(@"\[(.*)\]$");
-            var types = new String[dt.Rows[2].ItemArray.Length];
+            var types = new String[dt.Rows[typeRowNum].ItemArray.Length];
             var isArray = new String[types.Length];
-            dt.Rows[2].ItemArray.CopyTo(types, 0);
+            dt.Rows[typeRowNum].ItemArray.CopyTo(types, 0);
             for (int i_types = 0; i_types < types.Length; i_types++)
             {
                 var str_type = types[i_types].ToLower();
@@ -410,11 +419,10 @@ namespace KLib.tools
             }
 
             ///去掉表头
-            dt.Rows.RemoveAt(0);
-            dt.Rows.RemoveAt(0);
-            dt.Rows.RemoveAt(0);
-
-
+            for (int j = 0; j < dataRowStartNum; j++)
+            {
+                dt.Rows.RemoveAt(0);
+            }
 
 
             ExcelTable sheet = new ExcelTable();
@@ -528,14 +536,12 @@ namespace KLib.tools
         public XElement element_MessageRegisterClass;
 
         private XElement xml_template;
-        static private XElement static_xml_template;
 
         private Dictionary<string, ParamVO> dic_param = new Dictionary<string, ParamVO>();
 
         public void load(XElement xml_template)
         {
             this.xml_template = xml_template;
-            static_xml_template = xml_template;
 
             config = xml_template.Element("config");
             classExtension = getConfig("classExtension");
@@ -673,10 +679,10 @@ namespace KLib.tools
             list_className.Add(className);
         }
 
-        static public string GetInitClassText()
+        public string GetInitClassText()
         {
-            var InitClass = Properties.Resources.logo_excel + static_xml_template.Element("InitClass").Value;
-            var InitClassItem = static_xml_template.Element("InitClassItem").Value;
+            var InitClass = Properties.Resources.logo_excel + xml_template.Element("InitClass").Value;
+            var InitClassItem = xml_template.Element("InitClassItem").Value;
             var str_item = "";
             for (int i = 0; i < list_className.Count; i++)
             {
@@ -684,6 +690,12 @@ namespace KLib.tools
                 str_item += item;
             }
             return InitClass.Replace("$(initCode)", str_item);
+        }
+
+        public string GetInitClassFileName()
+        {
+            var str = xml_template.Element("InitClass").Attribute("fileName").Value + ClassExtension;
+            return str;
         }
 
         private ParamVO getParamVO(string paramType)
@@ -776,16 +788,90 @@ namespace KLib.tools
                         binWriter.Write(list_arrayValue.Length);
                         for (int k = 0; k < list_arrayValue.Length; k++)
                         {
-                            binWriter.WriteUTF(list_arrayValue[k]);
+                            WriteCellValue(binWriter, types[j], list_arrayValue[k]);
                         }
                     }
                     else
-                        binWriter.WriteUTF(row[j].ToString());
+                        WriteCellValue(binWriter, types[j], row[j].ToString());
 
                 }
             }
 
             return ms.ToArray();
+        }
+
+        public void WriteCellValue(EndianBinaryWriter binWriter, string type, string value)
+        {
+            //binWriter.WriteUTF(value);
+            //return;
+
+            switch (type)
+            {
+                case "int":
+                    if (value.Trim() == "")
+                        binWriter.Write(0);
+                    else
+                        binWriter.Write(Convert.ToInt32(value));
+                    break;
+
+                case "bool":
+                    var str_bool = value.Trim();
+                    binWriter.Write(str_bool.ToLower() == "true" || str_bool == "1");
+                    break;
+
+                case "float":
+                    if (value.Trim() == "")
+                        binWriter.Write(0f);
+                    else
+                        binWriter.Write(Convert.ToSingle(value));
+                    break;
+
+                case "date":
+
+                    if (value.Trim() == "")
+                        binWriter.WriteDate(new DateTime());
+                    else
+                    {
+                        var str_date = value;
+
+                        /*
+                        var reg_date = new Regex(@"(\d{4})/(\d{1,2})/(\d{1,2})");
+                        var reg_time = new Regex(@"(\d{1,2}):(\d{1,2}):(\d{1,2})");
+
+                        Match m_date = reg_date.Match(str_date);
+                        Match m_time = reg_time.Match(str_date);
+
+                        if (m_date.Groups.Count < 3 && m_time.Groups.Count < 3)
+                            throw new Exception("无效的date格式:" + str_date);
+
+                        var date = new DateTime(
+                            Convert.ToInt32(m_date.Groups[1].Value),
+                            Convert.ToInt32(m_date.Groups[2].Value),
+                            Convert.ToInt32(m_date.Groups[3].Value),
+                            Convert.ToInt32(m_time.Groups[1].Value),
+                            Convert.ToInt32(m_time.Groups[2].Value),
+                            Convert.ToInt32(m_time.Groups[3].Value)
+                            );
+                         binWriter.WriteDate(date);
+                         */
+
+                        try
+                        {
+                            var date = DateTime.Parse(str_date);
+                            binWriter.WriteDate(date);
+                        }
+                        catch
+                        {
+                            throw new Exception("无效的date格式:" + str_date);
+                        }
+                    }
+
+                    break;
+
+                default:
+                    binWriter.WriteUTF(value);
+                    break;
+            }
         }
 
     }

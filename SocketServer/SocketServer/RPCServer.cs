@@ -8,15 +8,12 @@ using System.Threading.Tasks;
 
 namespace SocketServer
 {
-    public delegate void MessageHandler(BaseProtocolVO vo, object client);
     public class RPCServer
     {
 
         private TestServer server;
         private PackageTranslator translator;
 
-        protected Dictionary<MessageType, MessageHandler> dic_handler = new Dictionary<MessageType, MessageHandler>();
-        public MessageHandler globalMessageHandler;
         public RPCServer(TestServer server, PackageTranslator translator)
         {
             this.server = server;
@@ -32,33 +29,18 @@ namespace SocketServer
 
         public void Send(BaseProtocolVO vo, object client)
         {
+            Console.WriteLine("发送消息:" + vo + "   给" + client);
             var bytes = translator.Encode(vo);
-            server.send(bytes, client);
+            server.send(bytes, ((ClientObject)client).socket);
         }
 
-        public void RegisterMessageHandler(MessageType procedureType, MessageHandler handler)
-        {
-
-            dic_handler[procedureType] = handler;
-
-        }
-
-        private void OnData(byte[] bytes, object sender)
+        private void OnData(byte[] bytes, ClientObject sender)
         {
 
             var vo = translator.Decode(bytes);
-            if (null != globalMessageHandler)
-                globalMessageHandler(vo, sender);
+            vo.customData = sender;
 
-            MessageHandler handler;
-            if (dic_handler.TryGetValue(vo.MessageType, out handler))
-            {
-                handler(vo, sender);
-            }
-            else
-            {
-                Console.WriteLine("过程" + vo.MessageType + "缺少处理函数！");
-            }
+            ProtocolCenter.DispatchMessage(vo);
 
         }
 

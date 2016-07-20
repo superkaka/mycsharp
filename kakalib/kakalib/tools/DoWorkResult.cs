@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace KLib.tools
+namespace KLib
 {
     public class DoWorkResult
     {

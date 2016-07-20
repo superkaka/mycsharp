@@ -8,7 +8,7 @@ using System.Windows.Forms;
 using System.Collections;
 using System.IO;
 using System.Threading;
-using KLib.enums;
+using KLib;
 
 namespace fileCompressTool
 {

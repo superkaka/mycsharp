@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
-using KLib.enums;
+using KLib;
 
 namespace excelExport
 {
@@ -71,7 +71,7 @@ namespace excelExport
                 try
                 {
 
-                    KLib.tools.ExcelUtil.export(inputPathList, output, compress, prefix_primaryKey, prefix_IgnoreSheet, prefix_IgnoreLine, prefix_IgnoreColumn, ignoreBlank, merge);
+                    ExcelUtil.export(inputPathList, output, compress, prefix_primaryKey, prefix_IgnoreSheet, prefix_IgnoreLine, prefix_IgnoreColumn, ignoreBlank, merge);
 
                 }
                 catch (Exception e)

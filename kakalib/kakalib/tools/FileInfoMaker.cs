@@ -4,13 +4,11 @@ using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Collections;
-using KLib.tools;
-using KLib.structs;
-using KLib.interfaces;
+using KLib;
 using System.Data.SQLite;
 using System.Data;
 
-namespace KLib.tools
+namespace KLib
 {
     public class FileInfoMaker
     {

@@ -1,4 +1,4 @@
-﻿using KLib.utils;
+﻿using KLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ namespace SocketServer
     {
 
         //数据事件委托
-        public delegate void DataReceivedHandler(byte[] bytes, Socket sender);
+        public delegate void DataReceivedHandler(byte[] bytes, ClientObject sender);
         //数据事件委托类型的事件
         public event DataReceivedHandler OnData;
 
@@ -60,7 +60,7 @@ namespace SocketServer
         {
             var bytesReceived = context_body.Buffer;
             if (OnData != null)
-                OnData(bytesReceived, ((ClientObject)context_body.UserToken).socket);
+                OnData(bytesReceived, ((ClientObject)context_body.UserToken));
 
             receive((Socket)sender);
         }
@@ -159,16 +159,31 @@ namespace SocketServer
             isListening = false;
         }
 
-        private class ClientObject
+    }
+
+    public class ClientObject
+    {
+        public int Id;
+        public Socket socket;
+        public SocketAsyncEventArgs context_head = new SocketAsyncEventArgs();
+        public SocketAsyncEventArgs context_body = new SocketAsyncEventArgs();
+        public ClientObject()
         {
-            public Socket socket;
-            public SocketAsyncEventArgs context_head = new SocketAsyncEventArgs();
-            public SocketAsyncEventArgs context_body = new SocketAsyncEventArgs();
-            public ClientObject()
-            {
-                context_head.UserToken = this;
-                context_body.UserToken = this;
-            }
+            Id = GetNextId();
+            context_head.UserToken = this;
+            context_body.UserToken = this;
+        }
+
+        override public string ToString()
+        {
+            return "client" + Id;
+        }
+
+        static private int nextId;
+
+        static public int GetNextId()
+        {
+            return ++nextId;
         }
 
     }

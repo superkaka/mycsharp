@@ -4,7 +4,7 @@ using System.Text;
 using System.ComponentModel;
 using System.IO;
 
-namespace KLib.tools
+namespace KLib
 {
     public class FileUtil
     {

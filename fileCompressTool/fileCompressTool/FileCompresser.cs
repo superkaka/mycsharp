@@ -4,9 +4,7 @@ using System.Text;
 using System.IO;
 using System.Windows.Forms;
 using System.Collections;
-using KLib.interfaces;
-using KLib.tools;
-using KLib.enums;
+using KLib;
 
 namespace fileCompressTool
 {

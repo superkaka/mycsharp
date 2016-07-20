@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using KLib.interfaces;
 using System.IO;
 using Ionic.Zlib;
 
-namespace KLib.tools
+namespace KLib
 {
     public class ZlibCompresser : ICompresser
     {

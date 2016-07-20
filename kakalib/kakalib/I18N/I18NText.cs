@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace KLib.I18N
+namespace KLib
 {
     public class I18NText : ParamText
     {

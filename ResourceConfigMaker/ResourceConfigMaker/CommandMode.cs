@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using KLib.tools;
+using KLib;
 using System.Collections;
 
 namespace ResourceConfigMaker

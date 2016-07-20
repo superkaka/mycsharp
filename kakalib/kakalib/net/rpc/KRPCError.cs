@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace KLib.net.rpc
+namespace KLib
 {
     public class KRPCError
     {

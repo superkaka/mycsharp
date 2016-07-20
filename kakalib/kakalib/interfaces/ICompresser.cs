@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace KLib.interfaces
+namespace KLib
 {
     public interface ICompresser
     {

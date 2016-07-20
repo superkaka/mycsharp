@@ -1,5 +1,4 @@
-﻿using KLib.net.protocol;
-using KLib.tools;
+﻿using KLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,22 +24,22 @@ namespace ProtocolGenerater
 
             if (dic_params.ContainsKey("protocol") && dic_params.ContainsKey("template") && dic_params.ContainsKey("output"))
             {
-                var codeGenerater = new CodeGenerater();
+                //            var codeGenerater = new CodeGenerater();
 
-                codeGenerater.generate(
-    dic_params["protocol"],
-    dic_params["template"],
-    dic_params["output"]
-    );
+                //            codeGenerater.generate(
+                //dic_params["protocol"],
+                //dic_params["template"],
+                //dic_params["output"]
+                //);
                 try
                 {
-        //            var codeGenerater = new CodeGenerater();
+                    var codeGenerater = new CodeGenerater();
 
-        //            codeGenerater.generate(
-        //dic_params["protocol"],
-        //dic_params["template"],
-        //dic_params["output"]
-        //);
+                    codeGenerater.generate(
+                    dic_params["protocol"],
+                    dic_params["template"],
+                    dic_params["output"]
+                    );
                 }
                 catch (Exception e)
                 {
@@ -54,7 +53,8 @@ namespace ProtocolGenerater
                 Console.ReadLine();
             }
 
-
+            Console.WriteLine("按任意键退出");
+            Console.ReadLine();
         }
     }
 }

@@ -4,15 +4,13 @@ using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Collections;
-using KLib.tools;
-using KLib.structs;
-using KLib.utils;
+using KLib;
 using System.Data.SQLite;
 using System.Data;
 using System.Diagnostics;
 using System.Threading;
 
-namespace KLib.tools
+namespace KLib
 {
     public class UnityAssetBundleBuilder
     {

@@ -116,6 +116,7 @@
     <Compile Include="net\connection\BaseConnection.cs" />
     <Compile Include="net\connection\SocketConnection.cs" />
     <Compile Include="net\protocol\BaseProtocolVO.cs" />
+    <Compile Include="net\protocol\BaseProtocolVOGeneric.cs" />
     <Compile Include="net\protocol\generated\MessageType.cs" />
     <Compile Include="net\protocol\generated\PlayerInfo.cs" />
     <Compile Include="net\protocol\generated\PlayerType.cs" />
@@ -124,14 +125,17 @@
     <Compile Include="net\protocol\generated\RequestSendString.cs" />
     <Compile Include="net\protocol\generated\ResponsePlayers.cs" />
     <Compile Include="net\protocol\generated\ResponseSendString.cs" />
+    <Compile Include="net\protocol\MessageHandlerInfo.cs" />
     <Compile Include="net\protocol\PackageTranslator.cs" />
+    <Compile Include="net\protocol\ProtocolCenter.cs" />
     <Compile Include="net\protocol\RPCClient.cs" />
+    <Compile Include="ReaderTest.cs" />
     <Compile Include="tools\ExcelGenerater.cs" />
     <Compile Include="tools\UnityAssetBundleBuilder.cs" />
     <Compile Include="tools\GZipCompresser.cs" />
     <Compile Include="utils\EndianBinaryStream.cs" />
-    <Compile Include="net\protocol\CodeGenerater.cs" />
-    <Compile Include="net\protocol\CodeTemplate.cs" />
+    <Compile Include="tools\protocol\CodeGenerater.cs" />
+    <Compile Include="tools\protocol\CodeTemplate.cs" />
     <Compile Include="net\rpc\IRPCPackager.cs" />
     <Compile Include="net\rpc\KRPCBatchRequest.cs" />
     <Compile Include="net\rpc\KRPCData.cs" />
@@ -159,6 +163,7 @@
     <Compile Include="utils\Logger.cs" />
     <Compile Include="utils\MD5Utils.cs" />
     <Compile Include="utils\NetUtils.cs" />
+    <Compile Include="utils\ProtocolBinaryStream.cs" />
     <Compile Include="utils\TimeUtils.cs" />
     <Compile Include="ZLib\CRC32.cs" />
     <Compile Include="ZLib\Deflate.cs" />

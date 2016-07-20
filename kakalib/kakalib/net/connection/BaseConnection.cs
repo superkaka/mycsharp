@@ -1,11 +1,9 @@
-﻿using KLib.utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace KLib.net.connection
+namespace KLib
 {
     public delegate void ConnectionEventHandler(string msg);
     public abstract class BaseConnection

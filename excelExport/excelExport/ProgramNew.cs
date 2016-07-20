@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using KLib.tools;
-using KLib.data;
-using KLib.I18N;
+using KLib;
 
 namespace excelExport
 {
@@ -19,6 +17,7 @@ namespace excelExport
             CommandModeNew.exec(CommandParse.parse(args));
 
 #if DEBUG
+            return;
             SchoolVO.Fill(FileUtil.readFile(@"J:\school.kk"));
 
             var tb = new Table();

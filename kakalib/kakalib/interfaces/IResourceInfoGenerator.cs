@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using KLib.structs;
+using KLib;
 
-namespace KLib.interfaces
+namespace KLib
 {
 	public interface IResourceInfoGenerator
 	{
